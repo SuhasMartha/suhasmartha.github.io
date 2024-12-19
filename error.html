@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+    
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 Error - Page Not Found</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .error-title {
+            font-size: 8rem;
+            font-weight: bold;
+            color: var(--blue-color);
+        }
+
+        .error-message {
+            font-size: 2.4rem;
+            margin-top: 2rem;
+            color: var(--text-color);
+        }
+
+        .error-description {
+            font-size: 1.6rem;
+            margin-top: 1.5rem;
+            color: var(--text-color);
+        }
+
+        .btn {
+            margin-top: 3rem;
+            color: var(--text-color);
+            background-color: var(--blue-color);
+            padding: 1.2rem 3.2rem;
+            font-size: 2rem;
+            border: none;
+            border-radius: .5rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .btn:hover {
+            background-color: #1f4ca4;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="index.html" class="logo">
+            <img src="./Assets/logo.png" alt="Logo" class="logo-img" >
+            <span class="logo-text">Sm.</span>
+        </a>
+        <i class='bx bx-menu' id="menu"></i>
+        <nav>
+            <a href="index.html" class="active">Home</a>
+            <a href="about.html">About</a>
+            <a href="blog,html">Blog</a>
+            <a href="#Contact">Contact</a>
+        </nav>
+    </header>
+    <div class="error-container">
+        <h1 class="error-title">404</h1>
+        <p class="error-message">Oops! The page you're looking for doesn't exist.</p>
+        <p class="error-description">The link may be broken, or the page has been moved. Try going back to the homepage.</p>
+        <a href="index.html"><button class="btn">Go Back to Home</button></a>
+    </div>
+
+</body>
+</html>
