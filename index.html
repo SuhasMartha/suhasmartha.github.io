@@ -12,6 +12,18 @@
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/x-icon" href="./Assets/logo.png">
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js">
+    </script>
+    <script type="text/javascript">
+    (function(){
+      emailjs.init({
+        publicKey: "gWQDKfxl6J-53BcRu",
+      });
+    })();
+    </script>
+    <script src="https://unpkg.com/typed.js@2.1.0/dist/typed.umd.js"></script>
+    <script src="script.js"></script>
 </head>
 <body>
     <header>
@@ -81,18 +93,19 @@
 
         <h1 class="title">Contact <span>Me</span></h1>
 
-        <form class="form">
+        <form class="form" onsubmit="sendMail(event)">
             <div class="input-box">
-                <input type="text" placeholder="First Name" required>
-                <input type="text" placeholder="Last Name" required>
+                <input type="text" id="first-name" name="first_name" placeholder="First Name" required>
+                <input type="text" id="last-name" name="last_name" placeholder="Last Name" required>
             </div>
             <div class="input-box">
-                <input type="email" placeholder="Email" required>
-                <input type="number" placeholder="Number" required>
+                <input type="email" id="email" name="email" placeholder="Email" required>
+                <input type="number" id="phone" name="phone" placeholder="Phone Number" required>
             </div>
-            <textarea cols="30" rows="10" placeholder="Message"></textarea>
-            <input type="submit" class="btn">
+            <textarea id="message" name="message" cols="30" rows="10" placeholder="Message" required></textarea>
+            <input type="submit" class="btn" value="Send Message">
         </form>
+    
 
     </section>
     <footer class="footer">
@@ -105,9 +118,5 @@
             </div>
         </div>
     </footer>
-
-    <script src="https://unpkg.com/typed.js@2.1.0/dist/typed.umd.js"></script>
-    <script src="script.js"></script>
-
 </body>
 </html>

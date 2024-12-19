@@ -186,6 +186,7 @@ header nav .active {
 }
 
 .About {
+    background-color:#1a222c;
     display: flex;
     align-items: center;
     justify-content: space-evenly;
@@ -219,6 +220,7 @@ header nav .active {
 }
 
 .Blog {
+    background-color:#1a222c;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -279,11 +281,11 @@ header nav .active {
     }
 
     .Blog .title {
-        font-size: 4.5rem;
+        font-size:8.5rem;
     }
 
     .Blog .content h1 {
-        font-size: 3rem;
+        font-size: 3.rem;
     }
 
     .Blog .content p {
