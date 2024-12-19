@@ -28,17 +28,27 @@ html {
     text-decoration: none;
 }
 
-.logo img {
-    width: 52px;
-    height: auto;
-    margin-right: 10px;
+.logo-img {
+    width: 40px;
+    height: 40px;
 }
 
 .logo-text {
-    font-size: 36px;
-    font-weight: bold;
+    font-size: 24px;
+    color: var(--text-color);
+    margin-left: 10px;
+}
+
+.logo a {
+    text-decoration: none;
+    pointer-events: auto; /
+}
+
+header a {
+    text-decoration: none;
     color: var(--text-color);
 }
+
 
 section {
     min-height: 100vh;
@@ -184,6 +194,7 @@ header nav .active {
 }
 
 .title {
+    
     font-size: 7rem;
     color: var(--text-color);
 }
