@@ -6,7 +6,8 @@ if (typeof window !== 'undefined') {
   window.Buffer = Buffer;
 }
 
-// Import all markdown files from the posts directory
+// Import all markdown files from src/data/posts folder
+// Use relative path from THIS file (src/utils/getMarkdownPosts.js)
 const postModules = import.meta.glob('../data/posts/*.md', {
   query: '?raw',
   import: 'default',
@@ -16,16 +17,14 @@ const postModules = import.meta.glob('../data/posts/*.md', {
 export const getMarkdownPosts = () => {
   const posts = [];
 
-  // Process each markdown file
   Object.entries(postModules).forEach(([path, content]) => {
     try {
-      // Parse frontmatter and content
+      // Parse frontmatter & content
       const { data: frontmatter, content: markdownContent } = matter(content);
-      
-      // Extract filename for slug if not provided
+
+      // Extract filename for slug
       const filename = path.split('/').pop().replace('.md', '');
-      
-      // Create post object
+
       const post = {
         id: posts.length + 1,
         title: frontmatter.title || 'Untitled',
@@ -47,23 +46,23 @@ export const getMarkdownPosts = () => {
     }
   });
 
-  // Sort posts by date (latest first)
+  // Sort newest first
   return posts.sort((a, b) => new Date(b.date) - new Date(a.date));
 };
 
-// Helper function to get a single post by slug
+// Get single post
 export const getPostBySlug = (slug) => {
   const posts = getMarkdownPosts();
   return posts.find(post => post.slug === slug);
 };
 
-// Helper function to get featured posts
+// Featured posts
 export const getFeaturedPosts = () => {
   const posts = getMarkdownPosts();
   return posts.filter(post => post.featured);
 };
 
-// Helper function to get recent posts
+// Recent posts
 export const getRecentPosts = (limit = 5) => {
   const posts = getMarkdownPosts();
   return posts.slice(0, limit);
