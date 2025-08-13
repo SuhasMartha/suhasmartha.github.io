@@ -6,6 +6,7 @@ import { viteStaticCopy } from "vite-plugin-static-copy";
 export default defineConfig({
   plugins: [
     tailwindcss(),
+    mdx(),
     react(),
     viteStaticCopy({
       targets: [

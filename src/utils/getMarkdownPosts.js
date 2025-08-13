@@ -8,9 +8,7 @@ if (typeof window !== 'undefined') {
 
 // Import all markdown files from src/data/posts folder
 // Use relative path from THIS file (src/utils/getMarkdownPosts.js)
-const postModules = import.meta.glob('../data/posts/*.md', {
-  query: '?raw',
-  import: 'default',
+const postModules = import.meta.glob('../data/posts/*.md?raw', {
   eager: true
 });
 
