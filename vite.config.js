@@ -1,16 +1,28 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { viteStaticCopy } from "vite-plugin-static-copy";
 
 export default defineConfig({
-  plugins: [tailwindcss(), react()],
-  base: '/', // Updated base path for GitHub Pages
+  plugins: [
+    tailwindcss(),
+    react(),
+    viteStaticCopy({
+      targets: [
+        {
+          src: "src/data/posts/*.md",
+          dest: "data/posts"           
+        }
+      ]
+    })
+  ],
+  base: '/', 
   define: {
-    global: 'globalThis',
-    Buffer: ['buffer', 'Buffer'],
+    global: "globalThis",
+    Buffer: ["buffer", "Buffer"],
   },
   optimizeDeps: {
-    exclude: ['lucide-react'],
-    include: ['buffer', 'gray-matter'],
+    exclude: ["lucide-react"],
+    include: ["buffer", "gray-matter"],
   }
 });
