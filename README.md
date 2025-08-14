@@ -118,9 +118,9 @@ _Note: Only the first 10 items are shown per directory due to API limitations. [
 | Git & GitHub    | Version Control               |
 
 **Language Composition:**
-- JavaScript: 85.4%
-- CSS: 14.0%
-- HTML: 0.6%
+- JavaScript: 89.6%
+- CSS: 9.1%
+- HTML: 1.3%
 
 ---
 
@@ -192,4 +192,4 @@ Licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
 > Built with ❤️ by [Suhas](https://github.com/SuhasMartha)
 
-<sub>Last Updated: 21-07-2025</sub>
+<sub>Last Updated: 14-08-2025</sub>
