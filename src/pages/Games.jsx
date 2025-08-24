@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
 import Navbar from "../Navbar";
 import Footer from "../components/Footer";
 
@@ -19,17 +18,19 @@ const Games = () => {
       id: 1,
       title: "Tic Tac Toe",
       category: "Strategy",
-      status: "comming-soon",
+      status: "available",
       icon: "⭕",
-      color: "from-blue-400 to-blue-600"
+      color: "from-blue-400 to-blue-600",
+      gameUrl: "https://suhasmartha.github.io/games/tic-tac-toe.html"
     },
     {
       id: 2,
       title: "Snake Game",
       category: "Arcade",
-      status: "comming-soon",
+      status: "available",
       icon: "🐍",
-      color: "from-green-400 to-green-600"
+      color: "from-green-400 to-green-600",
+      gameUrl: "https://suhasmartha.github.io/games/snake.html"
     },
     {
       id: 3,

@@ -36,7 +36,7 @@ const BlogCard = ({ post, index }) => {
         
         {/* Reading time overlay */}
         <div className="absolute top-4 right-4 bg-black/70 text-white px-2 py-1 rounded-full text-xs font-medium">
-          {post.readTime}
+          {post.readTime || post.read_time || '5 min read'}
         </div>
       </div>
 
@@ -81,7 +81,7 @@ const BlogCard = ({ post, index }) => {
           </div>
           
           <div className="flex items-center gap-2 text-xs">
-            <time>{formatDate(post.date)}</time>
+            <time>{formatDate(post.date || post.created_at)}</time>
           </div>
         </div>
 

@@ -68,7 +68,7 @@ const Navbar = () => {
               </Link>
             </li>
             <li>
-              <Link to="/blog" className="navilink" target="_blank" rel="noopener noreferrer">
+              <Link to="/blog" className="navilink" >
                 <span className="texthilit1">#</span>Blog
               </Link>
             </li>

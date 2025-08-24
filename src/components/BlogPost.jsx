@@ -9,11 +9,19 @@ import HorizontalLine from "../components/HorizontalLine";
 import 'highlight.js/styles/github-dark.css';
 import Navbar from "../Navbar";
 import Footer from "./Footer";
-import { getPostBySlug } from "../utils/getMarkdownPosts";
+import { getSupabasePostBySlug } from "../utils/getMarkdownPosts";
+import { supabase } from "../lib/supabase";
+import { analytics, trackView, trackShare, trackReadingTime } from "../utils/analytics";
+import ShareButtons from "./ShareButtons";
 
 const BlogPost = () => {
   const { slug } = useParams();
-  const post = getPostBySlug(slug);
+  const [post, setPost] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+  const [comments, setComments] = React.useState([]);
+  const [loadingComments, setLoadingComments] = React.useState(true);
+  const [isLiked, setIsLiked] = React.useState(false);
+  const [likeCount, setLikeCount] = React.useState(0);
   const [commentData, setCommentData] = React.useState({
     name: '',
     email: '',
@@ -22,9 +30,149 @@ const BlogPost = () => {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submitStatus, setSubmitStatus] = React.useState('');
 
+  // Load post data
+  useEffect(() => {
+    const loadPost = async () => {
+      try {
+        const postData = await getSupabasePostBySlug(slug);
+        setPost(postData);
+        
+        // Track view when post loads
+        if (postData) {
+          await trackView(postData.id, postData.slug);
+          loadLikes(postData.id);
+        }
+      } catch (error) {
+        console.error('Error loading post:', error);
+        setPost(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadPost();
+  }, [slug]);
+
+  // Load likes for the post
+  const loadLikes = async (postId) => {
+    try {
+      const { data, error } = await supabase
+        .from('post_analytics')
+        .select('likes')
+        .eq('post_id', postId)
+        .single();
+
+      if (data) {
+        setLikeCount(data.likes || 0);
+      }
+
+      // Check if user has liked this post (using localStorage for simplicity)
+      const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '[]');
+      setIsLiked(likedPosts.includes(postId));
+    } catch (error) {
+      console.error('Error loading likes:', error);
+    }
+  };
+
+  // Handle like button click
+  const handleLike = async () => {
+    if (!post) return;
+
+    try {
+      const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '[]');
+      
+      if (isLiked) {
+        // Unlike
+        const updatedLikedPosts = likedPosts.filter(id => id !== post.id);
+        localStorage.setItem('likedPosts', JSON.stringify(updatedLikedPosts));
+        setIsLiked(false);
+        setLikeCount(prev => Math.max(0, prev - 1));
+
+        // Update in database
+        await supabase.rpc('decrement_post_likes', { post_id: post.id });
+      } else {
+        // Like
+        const updatedLikedPosts = [...likedPosts, post.id];
+        localStorage.setItem('likedPosts', JSON.stringify(updatedLikedPosts));
+        setIsLiked(true);
+        setLikeCount(prev => prev + 1);
+
+        // Update in database
+        await supabase.rpc('increment_post_likes', { post_id: post.id });
+      }
+    } catch (error) {
+      console.error('Error updating like:', error);
+    }
+  };
+
+  // Track reading time when component unmounts or user leaves
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (post) {
+        trackReadingTime(post.id);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && post) {
+        trackReadingTime(post.id);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (post) {
+        trackReadingTime(post.id);
+      }
+    };
+  }, [post]);
+  // Load comments for the post
+  useEffect(() => {
+    const loadComments = async () => {
+      if (!post) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('blog_comments')
+          .select('*')
+          .eq('post_id', post.id)
+          .eq('approved', true)
+          .order('created_at', { ascending: true });
+
+        if (error) throw error;
+        setComments(data || []);
+      } catch (error) {
+        console.error('Error loading comments:', error);
+      } finally {
+        setLoadingComments(false);
+      }
+    };
+
+    loadComments();
+  }, [post]);
+
   // If post not found, redirect to 404
-  if (!post) {
+  if (!loading && !post) {
     return <Navigate to="/404" replace />;
+  }
+
+  if (loading) {
+    return (
+      <>
+        <div className="fixed inset-0 z-[-2] bg-white bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))] dark:bg-neutral-950 dark:bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]"></div>
+        <Navbar />
+        <div className="min-h-screen pt-20 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-lhilit-1 dark:border-dhilit-1 mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-400">Loading post...</p>
+          </div>
+        </div>
+      </>
+    );
   }
 
   // Handle comment form input changes
@@ -38,6 +186,77 @@ const BlogPost = () => {
 
   // Handle comment form submission
   const handleCommentSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitStatus('');
+
+    try {
+      const { error } = await supabase
+        .from('blog_comments')
+        .insert([
+          {
+            post_id: post.id,
+            name: commentData.name,
+            email: commentData.email,
+            comment: commentData.comment,
+            approved: false // Comments need approval by default
+          }
+        ]);
+
+      if (error) throw error;
+
+      setSubmitStatus('success');
+      setCommentData({ name: '', email: '', comment: '' });
+    } catch (error) {
+      console.error('Comment submission error:', error);
+      setSubmitStatus('error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const formatCommentDate = (dateString) => {
+    const options = { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
+  const getInitials = (name) => {
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const getAvatarColor = (name) => {
+    const colors = [
+      'bg-red-500',
+      'bg-blue-500', 
+      'bg-green-500',
+      'bg-yellow-500',
+      'bg-purple-500',
+      'bg-pink-500',
+      'bg-indigo-500',
+      'bg-teal-500'
+    ];
+    
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    return colors[Math.abs(hash) % colors.length];
+  };
+
+  // Handle comment form submission (keeping the old implementation as backup)
+  const handleCommentSubmitOld = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setSubmitStatus('');
@@ -73,64 +292,6 @@ const BlogPost = () => {
       setIsSubmitting(false);
     }
   };
-  // SEO metadata
-  useEffect(() => {
-    document.title = `${post.title} - Suhas Martha Blog`;
-    
-    // Update meta description
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute("content", post.excerpt);
-    } else {
-      const meta = document.createElement('meta');
-      meta.name = "description";
-      meta.content = post.excerpt;
-      document.getElementsByTagName('head')[0].appendChild(meta);
-    }
-
-    // Update meta keywords
-    const metaKeywords = document.querySelector('meta[name="keywords"]');
-    const keywords = post.tags.join(', ');
-    if (metaKeywords) {
-      metaKeywords.setAttribute("content", keywords);
-    } else {
-      const meta = document.createElement('meta');
-      meta.name = "keywords";
-      meta.content = keywords;
-      document.getElementsByTagName('head')[0].appendChild(meta);
-    }
-
-    // Open Graph tags
-    const ogTitle = document.querySelector('meta[property="og:title"]');
-    if (ogTitle) {
-      ogTitle.setAttribute("content", post.title);
-    } else {
-      const meta = document.createElement('meta');
-      meta.setAttribute("property", "og:title");
-      meta.content = post.title;
-      document.getElementsByTagName('head')[0].appendChild(meta);
-    }
-
-    const ogDescription = document.querySelector('meta[property="og:description"]');
-    if (ogDescription) {
-      ogDescription.setAttribute("content", post.excerpt);
-    } else {
-      const meta = document.createElement('meta');
-      meta.setAttribute("property", "og:description");
-      meta.content = post.excerpt;
-      document.getElementsByTagName('head')[0].appendChild(meta);
-    }
-
-    const ogImage = document.querySelector('meta[property="og:image"]');
-    if (ogImage) {
-      ogImage.setAttribute("content", post.image);
-    } else {
-      const meta = document.createElement('meta');
-      meta.setAttribute("property", "og:image");
-      meta.content = post.image;
-      document.getElementsByTagName('head')[0].appendChild(meta);
-    }
-  }, [post]);
 
   const formatDate = (dateString) => {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
@@ -144,15 +305,17 @@ const BlogPost = () => {
       
       <Navbar />
 
-      <Helmet>
-      <title>{post.title} - Suhas Martha Blog</title>
-      <meta name="description" content={post.excerpt} />
-      <meta name="keywords" content={post.tags.join(', ')} />
-      <meta name="author" content={post.author} />
-      <meta property="og:title" content={post.title} />
-      <meta property="og:description" content={post.excerpt} />
-      <meta property="og:image" content={post.image} />
-    </Helmet>
+      {post && (
+        <Helmet>
+          <title>{post.title} - Suhas Martha Blog</title>
+          <meta name="description" content={post.excerpt} />
+          <meta name="keywords" content={post.tags.join(', ')} />
+          <meta name="author" content={post.author} />
+          <meta property="og:title" content={post.title} />
+          <meta property="og:description" content={post.excerpt} />
+          <meta property="og:image" content={post.image} />
+        </Helmet>
+      )}
       
       <div className="min-h-screen pt-20">
         <div className="mycontainer">
@@ -248,6 +411,62 @@ const BlogPost = () => {
                 </div>
               </div>
             </motion.header>
+
+            {/* Share and Like Buttons Row */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="mb-8 flex items-center justify-between"
+            >
+              {/* Share Buttons (left) */}
+              <ShareButtons 
+                post={post} 
+                onShare={(platform) => trackShare(post.id, platform)}
+              />
+
+              {/* Like Button */}
+              <motion.button
+                onClick={handleLike}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className={`group relative flex items-center justify-center px-6 py-3 rounded-full border-2 transition-all duration-300 ml-auto
+                  ${isLiked
+                    ? "bg-red-500 border-red-500 text-white shadow-lg shadow-red-500/25"
+                    : "bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-red-400 dark:hover:border-red-400 hover:text-red-400 dark:hover:text-red-400"
+                  }`}
+                aria-label={isLiked ? "Unlike this post" : "Like this post"}
+              >
+                <span className="mr-2 font-semibold text-base">Like</span>
+                {/* Heart Icon */}
+                <motion.svg
+                  className="w-7 h-7"
+                  fill={isLiked ? "currentColor" : "none"}
+                  stroke="currentColor"
+                  strokeWidth={isLiked ? 0 : 2}
+                  viewBox="0 0 24 24"
+                  animate={isLiked ? { scale: [1, 1.3, 1] } : { scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                  />
+                </motion.svg>
+                {/* Ripple effect */}
+                <div className="absolute inset-0 rounded-full bg-red-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                {/* Pulse animation when liked */}
+                {isLiked && (
+                  <motion.div
+                    className="absolute inset-0 rounded-full border-2 border-red-400"
+                    initial={{ scale: 1, opacity: 1 }}
+                    animate={{ scale: 1.5, opacity: 0 }}
+                    transition={{ duration: 0.6 }}
+                  />
+                )}
+              </motion.button>
+            </motion.div>
 
             {/* Blog Content */}
             <motion.div
@@ -392,7 +611,7 @@ const BlogPost = () => {
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                       </svg>
                       <span className="text-green-700 dark:text-green-300 font-medium">
-                        Comment posted successfully! Thank you for your feedback.
+                        Comment submitted successfully! It will appear after moderation.
                       </span>
                     </div>
                   </motion.div>
@@ -427,6 +646,62 @@ const BlogPost = () => {
                   <li>• Ask questions if something needs clarification</li>
                   <li>• Comments are moderated and will appear after review</li>
                 </ul>
+              </div>
+
+              {/* Existing Comments */}
+              <div className="mt-8">
+                <h5 className="font-semibold text-gray-900 dark:text-gray-100 mb-6">
+                  💬 Comments ({comments.length})
+                </h5>
+                
+                {loadingComments ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-lhilit-1 dark:border-dhilit-1 mx-auto mb-4"></div>
+                    <p className="text-gray-600 dark:text-gray-400">Loading comments...</p>
+                  </div>
+                ) : comments.length > 0 ? (
+                  <div className="space-y-6">
+                    {comments.map((comment) => (
+                      <motion.div
+                        key={comment.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                        className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 shadow-sm"
+                      >
+                        <div className="flex items-start space-x-4">
+                          {/* Avatar */}
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm ${getAvatarColor(comment.name)}`}>
+                            {getInitials(comment.name)}
+                          </div>
+                          
+                          {/* Comment content */}
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <h6 className="font-semibold text-gray-900 dark:text-gray-100">
+                                {comment.name}
+                              </h6>
+                              <span className="text-sm text-gray-500 dark:text-gray-400">
+                                {formatCommentDate(comment.created_at)}
+                              </span>
+                            </div>
+                            
+                            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                              {comment.comment}
+                            </p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <svg className="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.959 8.959 0 01-4.906-1.476L3 21l2.476-5.094A8.959 8.959 0 013 12c0-4.418 3.582-8 8-8s8 3.582 8 8z" />
+                    </svg>
+                    <p>No comments yet. Be the first to share your thoughts!</p>
+                  </div>
+                )}
               </div>
             </motion.section>
             </motion.article>

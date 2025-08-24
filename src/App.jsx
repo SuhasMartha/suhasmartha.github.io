@@ -10,6 +10,7 @@ import BlogPost from "./components/BlogPost";
 import Games from "./pages/Games";
 import UnderProgress from "./pages/UnderProgress";
 import NotFound from "./pages/NotFound";
+import Admin from "./pages/Admin";
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
         <Route path="/blog/:slug" element={<BlogPost />} />
         <Route path="/games" element={<Games />} />
         <Route path="/under-progress" element={<UnderProgress />} />
+        <Route path="/admin" element={<Admin />} />
         {/* Catch all unmatched routes */}
         <Route path="*" element={<NotFound />} />
       </Routes>

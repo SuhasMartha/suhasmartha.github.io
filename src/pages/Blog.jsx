@@ -3,7 +3,59 @@ import { motion } from "framer-motion";
 import Navbar from "../Navbar";
 import Footer from "../components/Footer";
 import BlogCard from "../components/BlogCard";
-import { getMarkdownPosts, getFeaturedPosts, getRecentPosts } from "../utils/getMarkdownPosts";
+import { getSupabasePosts, getSupabaseFeaturedPosts, getSupabaseRecentPosts } from "../utils/getMarkdownPosts";
+
+const MonthlyArchive = () => {
+  const [archiveData, setArchiveData] = useState([]);
+
+  useEffect(() => {
+    const loadArchiveData = async () => {
+      try {
+        const posts = await getSupabasePosts();
+        const archive = {};
+        
+        posts.forEach(post => {
+          const date = new Date(post.date || post.created_at);
+          const monthYear = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+          
+          if (!archive[monthYear]) {
+            archive[monthYear] = [];
+          }
+          archive[monthYear].push(post);
+        });
+        
+        const sortedArchive = Object.entries(archive)
+          .sort(([a], [b]) => new Date(b) - new Date(a))
+          .slice(0, 6); // Show last 6 months
+        
+        setArchiveData(sortedArchive);
+      } catch (error) {
+        console.error('Error loading archive data:', error);
+      }
+    };
+    
+    loadArchiveData();
+  }, []);
+
+  return (
+    <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+      <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">
+        Monthly Archive
+      </h3>
+      <div className="space-y-3">
+        {archiveData.map(([monthYear, posts]) => (
+          <div key={monthYear} className="flex items-center justify-between">
+            <span className="text-gray-700 dark:text-gray-300">{monthYear}</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full">
+              {posts.length}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 
 const Blog = () => {
   const [selectedTag, setSelectedTag] = useState("All");
@@ -16,9 +68,13 @@ const Blog = () => {
 
   // Load posts from markdown files
   useEffect(() => {
-    const markdownPosts = getMarkdownPosts();
-    setPosts(markdownPosts);
-    setFilteredPosts(markdownPosts);
+    const loadPosts = async () => {
+      const supabasePosts = await getSupabasePosts();
+      setPosts(supabasePosts);
+      setFilteredPosts(supabasePosts);
+    };
+    
+    loadPosts();
   }, []);
 
   // Handle newsletter form input changes
@@ -66,8 +122,19 @@ const Blog = () => {
   // Get all unique tags
   const allTags = ["All", ...new Set(posts.flatMap(post => post.tags))];
   
-  const featuredPosts = getFeaturedPosts();
-  const recentPosts = getRecentPosts(3);
+  const [featuredPosts, setFeaturedPosts] = useState([]);
+  const [recentPosts, setRecentPosts] = useState([]);
+
+  useEffect(() => {
+    const loadFeaturedAndRecent = async () => {
+      const featured = await getSupabaseFeaturedPosts();
+      const recent = await getSupabaseRecentPosts(3);
+      setFeaturedPosts(featured);
+      setRecentPosts(recent);
+    };
+    
+    loadFeaturedAndRecent();
+  }, []);
 
   // SEO metadata
   useEffect(() => {
@@ -208,64 +275,78 @@ const Blog = () => {
           )}
 
           {/* All Posts Section */}
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-          >
-            <div className="flex items-center justify-between mb-12">
-              <div className="flex items-center gap-3">
-                <div className="w-1 h-8 bg-gradient-to-b from-lhilit-1 to-lhilit-2 dark:from-dhilit-1 dark:to-dhilit-2 rounded-full"></div>
-                <h2 className="head4">
-                  {selectedTag === "All" && !searchTerm ? "All Posts" : 
-                   searchTerm ? `Search Results for "${searchTerm}"` : 
-                   `Posts tagged with "${selectedTag}"`}
-                </h2>
-              </div>
-              
-              <div className="text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
-                {filteredPosts.length} post{filteredPosts.length !== 1 ? 's' : ''} found
-              </div>
-            </div>
-
-            {filteredPosts.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-                {filteredPosts.map((post, index) => (
-                  <BlogCard key={post.id} post={post} index={index} />
-                ))}
-              </div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
-                className="text-center py-16"
-              >
-                <div className="w-24 h-24 mx-auto mb-6 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-                  <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0118 12c0-4.418-3.582-8-8-8s-8 3.582-8 8c0 1.441.383 2.794 1.052 3.962" />
-                  </svg>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            {/* Main Posts Section */}
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="lg:col-span-3"
+            >
+              <div className="flex items-center justify-between mb-12">
+                <div className="flex items-center gap-3">
+                  <div className="w-1 h-8 bg-gradient-to-b from-lhilit-1 to-lhilit-2 dark:from-dhilit-1 dark:to-dhilit-2 rounded-full"></div>
+                  <h2 className="head4">
+                    {selectedTag === "All" && !searchTerm ? "All Posts" : 
+                     searchTerm ? `Search Results for "${searchTerm}"` : 
+                     `Posts tagged with "${selectedTag}"`}
+                  </h2>
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">No posts found</h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  {searchTerm 
-                    ? "Try adjusting your search terms or browse all posts."
-                    : `No posts found for the "${selectedTag}" tag. Try selecting a different tag.`
-                  }
-                </p>
-                <button
-                  onClick={() => {
-                    setSelectedTag("All");
-                    setSearchTerm("");
-                  }}
-                  className="px-6 py-3 bg-lhilit-1 dark:bg-dhilit-1 text-white rounded-full font-semibold hover:bg-lhilit-2 dark:hover:bg-dhilit-2 transition-colors duration-300"
-                >
-                  View All Posts
-                </button>
-              </motion.div>
-            )}
-          </motion.section>
+                
+                <div className="text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
+                  {filteredPosts.length} post{filteredPosts.length !== 1 ? 's' : ''} found
+                </div>
+              </div>
 
+              {filteredPosts.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {filteredPosts.map((post, index) => (
+                    <BlogCard key={post.id} post={post} index={index} />
+                  ))}
+                </div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5 }}
+                  className="text-center py-16"
+                >
+                  <div className="w-24 h-24 mx-auto mb-6 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                    <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0118 12c0-4.418-3.582-8-8-8s-8 3.582-8 8c0 1.441.383 2.794 1.052 3.962" />
+                    </svg>
+                  </div>
+                  <h3 className="flex justify-center text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">No posts found</h3>
+                  <p className="flex justify-center text-gray-600 dark:text-gray-400 mb-6">
+                    {searchTerm 
+                      ? "Try adjusting your search terms or browse all posts."
+                      : `No posts found for the "${selectedTag}" tag. Try selecting a different tag.`
+                    }
+                  </p>
+                  <button
+                    onClick={() => {
+                      setSelectedTag("All");
+                      setSearchTerm("");
+                    }}
+                    className="px-6 py-3 bg-lhilit-1 dark:bg-dhilit-1 text-white rounded-full font-semibold hover:bg-lhilit-2 dark:hover:bg-dhilit-2 transition-colors duration-300"
+                  >
+                    View All Posts
+                  </button>
+                </motion.div>
+              )}
+            </motion.section>
+
+            {/* Sidebar */}
+            <motion.aside
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="lg:col-span-1 space-y-8"
+            >
+              {/* Monthly Archive */}
+              <MonthlyArchive />
+            </motion.aside>
+          </div>
           {/* Newsletter Signup Section */}
           <motion.section
             initial={{ opacity: 0, y: 20 }}
