@@ -164,24 +164,21 @@ const Games = () => {
     }
   };
 
-  const handlePlayGame = (game) => {
-    if (game.status === "available" && game.gameUrl) {
-      // For GitHub Pages deployment
-      const baseUrl = import.meta.env.PROD ? 'https://suhasmartha.github.io/suhasmartha.github.io' : '';
-      let gameUrl = game.gameUrl;
-      
-      // Clean up the game URL path
-      if (gameUrl.startsWith('/src/')) {
-        gameUrl = gameUrl.replace('/src/', '/');
-      }
-      if (gameUrl.startsWith('/public/')) {
-        gameUrl = gameUrl.replace('/public/', '/');
-      }
-      
-      const fullUrl = baseUrl + gameUrl;
-      window.open(fullUrl, '_blank');
+const handlePlayGame = (game) => {
+  if (game.status === "available" && game.gameUrl) {
+    // If gameUrl is absolute (starts with http), open directly
+    if (game.gameUrl.startsWith("http")) {
+      window.open(game.gameUrl, "_blank");
+    } else {
+      // For local relative paths
+      const baseUrl = import.meta.env.PROD 
+        ? 'https://suhasmartha.github.io' 
+        : '';
+      const fullUrl = baseUrl + game.gameUrl;
+      window.open(fullUrl, "_blank");
     }
-  };
+  }
+};
 
   return (
     <>
