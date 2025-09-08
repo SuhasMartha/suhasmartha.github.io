@@ -1,0 +1,123 @@
+// security.js – production-only security utilities
+
+export const initSecurityMeasures = () => {
+  if (process.env.NODE_ENV !== "production") {
+    console.log("Security measures disabled in development mode");
+    return;
+  }
+
+  /* ---------- Core Hard Blocks ---------- */
+
+  // Disable right-click
+  const handleContextMenu = (e) => e.preventDefault();
+
+  // Block F12, Ctrl+Shift+I/J, Ctrl+U
+  const handleKeyDown = (e) => {
+    if (
+      e.keyCode === 123 || // F12
+      (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || // I / J
+      (e.ctrlKey && e.keyCode === 85) // Ctrl+U
+    ) {
+      e.preventDefault();
+    }
+
+    // Block Ctrl+P (print)
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "p") {
+      e.preventDefault();
+      alert("Printing is disabled on this page");
+    }
+
+    // Block Ctrl+S (save)
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+      e.preventDefault();
+      alert("Saving page is disabled");
+    }
+
+    // Block PrintScreen key
+    if (e.key === "PrintScreen") {
+      e.preventDefault();
+      alert("Screenshots are disabled!");
+    }
+  };
+
+  // Smarter select block
+  const handleSelectStart = (e) => {
+    const el = e.target;
+    const isWhitelisted =
+      el.tagName === "INPUT" ||
+      el.tagName === "TEXTAREA" ||
+      el.getAttribute("contenteditable") === "true" ||
+      el.closest(".allow-select");
+
+    if (!isWhitelisted) e.preventDefault();
+  };
+
+  // Disable copy/cut/paste globally (except whitelist)
+  const handleCopyCutPaste = (e) => {
+    const el = e.target;
+    const isWhitelisted =
+      el.tagName === "INPUT" ||
+      el.tagName === "TEXTAREA" ||
+      el.getAttribute("contenteditable") === "true" ||
+      el.closest(".allow-select");
+
+    if (!isWhitelisted) e.preventDefault();
+  };
+
+  // Disable drag (except whitelist)
+  const handleDragStart = (e) => {
+    if (!e.target.closest(".allow-drag")) e.preventDefault();
+  };
+
+  /* ---------- DevTools Detection ---------- */
+  let devToolsOpen = false;
+  const threshold = 160;
+  const checkDevTools = () => {
+    if (
+      window.outerWidth - window.innerWidth > threshold ||
+      window.outerHeight - window.innerHeight > threshold
+    ) {
+      if (!devToolsOpen) {
+        devToolsOpen = true;
+        console.warn("DevTools detected!");
+        // Example action: redirect or lock screen
+        // window.location.href = "/";
+      }
+    } else {
+      devToolsOpen = false;
+    }
+  };
+  const devToolsInterval = setInterval(checkDevTools, 1000);
+
+  /* ---------- Blur when out of focus ---------- */
+  const body = document.querySelector("body");
+  const handleBlur = () => body.classList.add("blurred");
+  const handleFocus = () => body.classList.remove("blurred");
+
+  /* ---------- Attach listeners ---------- */
+  document.addEventListener("contextmenu", handleContextMenu);
+  document.addEventListener("keydown", handleKeyDown);
+  document.addEventListener("selectstart", handleSelectStart);
+  document.addEventListener("copy", handleCopyCutPaste);
+  document.addEventListener("cut", handleCopyCutPaste);
+  document.addEventListener("paste", handleCopyCutPaste);
+  document.addEventListener("dragstart", handleDragStart);
+  window.addEventListener("blur", handleBlur);
+  window.addEventListener("focus", handleFocus);
+
+  console.log("✅ Security measures enabled in production mode");
+
+  /* ---------- Cleanup helper ---------- */
+  return () => {
+    document.removeEventListener("contextmenu", handleContextMenu);
+    document.removeEventListener("keydown", handleKeyDown);
+    document.removeEventListener("selectstart", handleSelectStart);
+    document.removeEventListener("copy", handleCopyCutPaste);
+    document.removeEventListener("cut", handleCopyCutPaste);
+    document.removeEventListener("paste", handleCopyCutPaste);
+    document.removeEventListener("dragstart", handleDragStart);
+    window.removeEventListener("blur", handleBlur);
+    window.removeEventListener("focus", handleFocus);
+    clearInterval(devToolsInterval);
+  };
+};

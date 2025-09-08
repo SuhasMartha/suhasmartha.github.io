@@ -1,0 +1,33 @@
+.content p {
+    width: 700px;
+    line-height: 26px;
+    font-size: 18px;
+    text-align: justify;
+}
+
+/* Remove all custom cursor styles - use default system cursor */
+.cursor-effect-container {
+    display: none;
+}
+
+.cursor {
+    display: none;
+}
+
+.cursor2 {
+    display: none;
+}
+
+/* Remove all cursor hover states */
+.cursor.hovering,
+.cursor.hovering-text,
+.cursor.hovering-card,
+.cursor2.hovering,
+.cursor2.hovering-text {
+    display: none;
+}
+
+/* Remove cursor text */
+.cursor-text {
+    display: none;
+}
