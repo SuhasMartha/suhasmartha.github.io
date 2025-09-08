@@ -136,4 +136,3 @@ vite.config.ts.timestamp-*
 
 # supabase migration
 supabase/migrations/
-.env
