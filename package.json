@@ -32,8 +32,10 @@
     "react-responsive": "^10.0.1",
     "react-router-dom": "^7.6.0",
     "rehype-highlight": "^7.0.2",
+    "remark-footnotes": "^4.0.1",
     "remark-gfm": "^4.0.1",
-    "tailwindcss": "^4.1.4"
+    "tailwindcss": "^4.1.4",
+    "unist-util-visit": "^5.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",

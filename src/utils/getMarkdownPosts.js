@@ -331,6 +331,8 @@ export const getSupabasePostBySlug = async (slug) => {
 
     if (error) throw error;
 
+    console.log('Post loaded from Supabase:', { slug, hasContent: !!data.content, contentLength: data.content?.length });
+
     return {
       id: data.id,
       title: data.title,
@@ -346,13 +348,15 @@ export const getSupabasePostBySlug = async (slug) => {
       featured: data.featured,
       comments_enabled: data.comments_enabled,
       image: data.image,
-      content: data.content,
+      content: data.content || '', // Content from database
     };
   } catch (error) {
     console.error('Error fetching post from Supabase:', error);
     // Fallback to static posts
     const posts = getStaticPosts();
-    return posts.find(post => post.slug === slug);
+    const fallbackPost = posts.find(post => post.slug === slug);
+    console.log('Using fallback post:', fallbackPost ? fallbackPost.slug : 'not found');
+    return fallbackPost;
   }
 };
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkFootnotes from 'remark-footnotes';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github-dark.css';
 import { supabase } from "../../lib/supabase";
@@ -27,6 +28,8 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('write');
   const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   useEffect(() => {
     if (post) {
@@ -90,6 +93,59 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
       ...prev,
       tags: prev.tags.filter(tag => tag !== tagToRemove)
     }));
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file is an image
+    if (!file.type.startsWith('image/')) {
+      setError('Please upload an image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      setError('Image must be smaller than 5MB');
+      return;
+    }
+
+    setUploadingImage(true);
+    setError('');
+
+    try {
+      // Create unique filename
+      const timestamp = Date.now();
+      const filename = `blog-images/${timestamp}-${file.name.replace(/\s+/g, '-')}`;
+
+      // Upload to Supabase Storage
+      const { data, error: uploadError } = await supabase.storage
+        .from('blog-images')
+        .upload(filename, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('blog-images')
+        .getPublicUrl(data.path);
+
+      // Update form with image URL
+      setFormData(prev => ({
+        ...prev,
+        image: urlData.publicUrl
+      }));
+
+      setUploadProgress(0);
+    } catch (err) {
+      console.error('Image upload error:', err);
+      setError(err.message || 'Failed to upload image');
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -344,7 +400,7 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
               <div className="min-h-[500px] p-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
                 <div className="prose prose-sm dark:prose-invert max-w-none">
                   <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
+                    remarkPlugins={[remarkGfm, remarkFootnotes]}
                     rehypePlugins={[rehypeHighlight]}
                   >
                     {formData.content || '*No content yet...*'}
@@ -468,23 +524,66 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
           {/* Featured Image */}
           <div>
             <label htmlFor="image" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Featured Image URL
+              Featured Image
             </label>
-            <input
-              type="url"
-              id="image"
-              name="image"
-              value={formData.image}
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-lhilit-1 dark:focus:ring-dhilit-1 focus:border-transparent transition-all duration-300"
-              placeholder="https://example.com/image.jpg"
-            />
+            
+            {/* Upload or URL Option */}
+            <div className="space-y-3">
+              {/* Upload Button */}
+              <div className="flex items-center gap-3">
+                <label className="flex-1 relative cursor-pointer">
+                  <div className="px-4 py-3 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-lhilit-1 dark:hover:border-dhilit-1 transition-colors text-center">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={uploadingImage}
+                      className="hidden"
+                    />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {uploadingImage ? 'Uploading...' : '📁 Click to upload image'}
+                    </span>
+                  </div>
+                </label>
+              </div>
+
+              {/* Progress bar */}
+              {uploadingImage && (
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                  <div
+                    className="bg-lhilit-1 dark:bg-dhilit-1 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  ></div>
+                </div>
+              )}
+
+              {/* Divider */}
+              <div className="relative flex items-center">
+                <div className="flex-1 border-t border-gray-300 dark:border-gray-600"></div>
+                <span className="px-3 text-xs text-gray-500 dark:text-gray-400">OR</span>
+                <div className="flex-1 border-t border-gray-300 dark:border-gray-600"></div>
+              </div>
+
+              {/* URL Input */}
+              <input
+                type="url"
+                id="image"
+                name="image"
+                value={formData.image}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-lhilit-1 dark:focus:ring-dhilit-1 focus:border-transparent transition-all duration-300"
+                placeholder="https://example.com/image.jpg"
+              />
+            </div>
+
+            {/* Image Preview */}
             {formData.image && (
-              <div className="mt-3">
+              <div className="mt-4">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Preview:</p>
                 <img
                   src={formData.image}
                   alt="Preview"
-                  className="h-32 w-48 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
+                  className="h-40 w-full object-cover rounded-lg border border-gray-200 dark:border-gray-700 shadow-md"
                 />
               </div>
             )}
