@@ -5,7 +5,7 @@ const ExperienceTimeline = () => {
   const experienceData = [
     {
       id: 1,
-      period: "Aug 2025",
+      period: "Sept 2025",
       position: "Internship",
       company: "IIT Guwahati, Technology Innovation & Development Foundation",
       location: "Remote",

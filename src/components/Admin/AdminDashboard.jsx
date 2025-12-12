@@ -215,6 +215,81 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
 
   const stats = getStats();
 
+  const [trendingSlugs, setTrendingSlugs] = useState([]);
+  const [loadingTrending, setLoadingTrending] = useState(false);
+  const [trendingError, setTrendingError] = useState('');
+
+  const fetchTrendingSlugs = async () => {
+    setLoadingTrending(true);
+    setTrendingError('');
+    try {
+      // Try to read from trending_posts table (if it exists)
+      const { data, error } = await supabase
+        .from('trending_posts')
+        .select('slug')
+        .order('created_at', { ascending: false });
+
+      // If table doesn't exist (404) or has data, use it
+      if (!error) {
+        setTrendingSlugs(data.map(r => r.slug) || []);
+        return;
+      }
+
+      // Table doesn't exist, that's ok - we'll create it on save
+      console.log('trending_posts table does not exist yet (will be created on save)');
+      setTrendingSlugs([]);
+    } catch (err) {
+      console.error('Error fetching trending slugs:', err);
+      // Still ok, just means table doesn't exist yet
+      setTrendingSlugs([]);
+    } finally {
+      setLoadingTrending(false);
+    }
+  };
+
+  const saveTrendingSlugs = async (selectedSlugs) => {
+    setLoadingTrending(true);
+    setTrendingError('');
+    try {
+      // Try to save to trending_posts table
+      // First, delete all existing
+      await supabase.from('trending_posts').delete().gte('id', '00000000-0000-0000-0000-000000000000');
+
+      // Then insert new ones if any selected
+      if (selectedSlugs.length > 0) {
+        const rows = selectedSlugs.map(slug => ({ slug }));
+        const { error: insError } = await supabase.from('trending_posts').insert(rows);
+        
+        if (insError) {
+          // Table might not exist - try to create it and retry
+          if (insError.code === 'PGRST102' || insError.message.includes('not found')) {
+            console.log('trending_posts table does not exist. Please create it with: create table trending_posts (id uuid default gen_random_uuid() primary key, slug text not null, created_at timestamptz default now());');
+            setTrendingError('Trending posts table not created yet. Run setup in browser console or create manually.');
+            setTrendingSlugs(selectedSlugs);
+            return;
+          }
+          throw insError;
+        }
+      }
+
+      // Update local state
+      setTrendingSlugs(selectedSlugs);
+    } catch (err) {
+      console.error('Error saving trending slugs:', err);
+      setTrendingError(`Failed to save: ${err.message || 'Unknown error'}`);
+    } finally {
+      setLoadingTrending(false);
+    }
+  };
+
+  useEffect(() => {
+    // load trending selection when admin opens dashboard
+    if (activeTab === 'analytics') {
+      fetchTrendingSlugs();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'dashboard':
@@ -339,18 +414,134 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
 
       case 'analytics':
         return (
-          <PostAnalytics 
-            posts={posts} 
-            comments={comments} 
-            analyticsData={{
-              ...stats,
-              totalViews: analyticsData.totalViews || 0,
-              totalShares: analyticsData.totalShares || 0,
-              totalLikes: analyticsData.totalLikes || 0,
-              avgViewsPerPost: analyticsData.avgViewsPerPost || 0,
-              engagementRate: analyticsData.engagementRate || 0
-            }} 
-          />
+          <div className="space-y-6">
+            <PostAnalytics 
+              posts={posts} 
+              comments={comments} 
+              analyticsData={{
+                ...stats,
+                totalViews: analyticsData.totalViews || 0,
+                totalShares: analyticsData.totalShares || 0,
+                totalLikes: analyticsData.totalLikes || 0,
+                avgViewsPerPost: analyticsData.avgViewsPerPost || 0,
+                engagementRate: analyticsData.engagementRate || 0
+              }} 
+            />
+
+            {/* Trending Manager */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Trending Manager</h3>
+                <div className="text-sm text-gray-500">
+                  {posts.length === 0 ? (
+                    <span className="text-red-600">No posts available</span>
+                  ) : (
+                    `Select posts to appear in Trending (${posts.length} posts available)`
+                  )}
+                </div>
+              </div>
+
+              {loadingTrending ? (
+                <div className="space-y-2">
+                  {[1,2,3,4].map(i => (
+                    <div key={i} className="h-10 bg-gray-100 dark:bg-gray-700 rounded animate-pulse"></div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {trendingError && (
+                    <div className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 p-3 rounded">{trendingError}</div>
+                  )}
+
+                  {posts.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>No posts available. Posts may still be loading.</p>
+                      <button 
+                        onClick={() => window.location.reload()} 
+                        className="mt-4 text-blue-600 hover:underline"
+                      >
+                        Reload Page
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-72 overflow-auto pr-2">
+                        {posts && posts.length > 0 ? posts.map((p, idx) => {
+                          const slug = p.slug || p.id || `post-${idx}`;
+                          const checked = trendingSlugs.includes(slug);
+                          const isDisabled = !checked && trendingSlugs.length >= 3;
+                          const position = trendingSlugs.indexOf(slug) + 1;
+                          
+                          const handleToggle = () => {
+                            if (checked) {
+                              // Remove from trending
+                              setTrendingSlugs(prev => prev.filter(s => s !== slug));
+                            } else if (trendingSlugs.length < 3) {
+                              // Add to trending
+                              setTrendingSlugs(prev => [...prev, slug]);
+                            }
+                          };
+                          
+                          return (
+                            <div
+                              key={slug}
+                              onClick={handleToggle}
+                              className={`flex items-center gap-3 p-3 rounded-lg transition border-2 cursor-pointer ${
+                                isDisabled 
+                                  ? 'opacity-50 cursor-not-allowed' 
+                                  : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                              } ${checked ? 'bg-lhilit-1/10 dark:bg-dhilit-1/10 border-lhilit-1 dark:border-dhilit-1' : 'border-transparent'}`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                disabled={isDisabled}
+                                onChange={() => {}}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                }}
+                                className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
+                              />
+                              {checked && (
+                                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-lhilit-1 dark:bg-dhilit-1 text-white flex items-center justify-center text-xs font-bold">
+                                  {position}
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">{p.title}</div>
+                                <div className="text-xs text-gray-500">{new Date(p.date || p.created_at).toLocaleDateString()}</div>
+                              </div>
+                            </div>
+                          );
+                        }) : (
+                          <div className="col-span-2 text-center text-gray-500">No posts found</div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-3 mt-4">
+                        <button
+                          onClick={() => saveTrendingSlugs(trendingSlugs)}
+                          disabled={loadingTrending || trendingSlugs.length === 0}
+                          className="px-4 py-2 bg-lhilit-1 dark:bg-dhilit-1 text-white rounded-lg font-medium hover:opacity-90 disabled:opacity-60"
+                        >
+                          Save Trending ({trendingSlugs.length}/3)
+                        </button>
+
+                        <button
+                          onClick={() => fetchTrendingSlugs()}
+                          className="px-3 py-2 border rounded-lg text-sm"
+                        >
+                          Reload
+                        </button>
+
+                        <div className="text-sm text-gray-500 ml-auto">Select up to 3 posts</div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         );
 
       case 'authors':

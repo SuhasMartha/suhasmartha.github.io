@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Helmet } from "react-helmet";
@@ -9,10 +9,174 @@ import HorizontalLine from "../components/HorizontalLine";
 import 'highlight.js/styles/github-dark.css';
 import Navbar from "../Navbar";
 import Footer from "./Footer";
-import { getSupabasePostBySlug } from "../utils/getMarkdownPosts";
+import { getSupabasePostBySlug, getSupabasePosts } from "../utils/getMarkdownPosts";
 import { supabase } from "../lib/supabase";
 import { analytics, trackView, trackShare, trackReadingTime } from "../utils/analytics";
 import ShareButtons from "./ShareButtons";
+
+// Monthly Archive Component for BlogPost
+const BlogPostMonthlyArchive = () => {
+  const [archiveData, setArchiveData] = useState({});
+  const [expandedYears, setExpandedYears] = useState({});
+
+  useEffect(() => {
+    const loadArchiveData = async () => {
+      try {
+        const posts = await getSupabasePosts();
+        const archive = {};
+        
+        posts.forEach(post => {
+          const date = new Date(post.date || post.created_at);
+          const year = date.getFullYear();
+          const monthYear = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+          
+          if (!archive[year]) {
+            archive[year] = {};
+          }
+          if (!archive[year][monthYear]) {
+            archive[year][monthYear] = [];
+          }
+          archive[year][monthYear].push(post);
+        });
+        
+        setArchiveData(archive);
+        
+        // Keep all years collapsed by default
+        setExpandedYears({});
+      } catch (error) {
+        console.error('Error loading archive data:', error);
+      }
+    };
+    
+    loadArchiveData();
+  }, []);
+
+  const toggleYear = (year) => {
+    setExpandedYears(prev => ({
+      ...prev,
+      [year]: !prev[year]
+    }));
+  };
+
+  const sortedYears = Object.keys(archiveData)
+    .map(Number)
+    .sort((a, b) => b - a);
+
+  return (
+    <div className="space-y-4">
+      {sortedYears.map(year => (
+        <div key={year}>
+          <button
+            onClick={() => toggleYear(year)}
+            className="w-full flex items-center justify-between p-3 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition font-semibold text-gray-900 dark:text-gray-100 mb-2"
+          >
+            <span>{year}</span>
+            <svg
+              className={`w-4 h-4 transition-transform ${expandedYears[year] ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+          </button>
+          
+          {expandedYears[year] && (
+            <div className="space-y-2 pl-2">
+              {Object.entries(archiveData[year])
+                .sort(([a], [b]) => new Date(b) - new Date(a))
+                .map(([monthYear, posts]) => (
+                  <Link
+                    key={monthYear}
+                    to={`/blog?month=${monthYear}`}
+                    className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                  >
+                    <span className="text-sm">{monthYear.split(' ')[0]} {monthYear.split(' ')[1]}</span>
+                    <span className="text-xs px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                      {posts.length}
+                    </span>
+                  </Link>
+                ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// Trending Posts Component for BlogPost
+const BlogPostTrendingPosts = () => {
+  const [trendingPosts, setTrendingPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadTrendingPosts = async () => {
+      try {
+        // Try to read global trending slugs from Supabase `trending_posts` table
+        const { data: tdata, error: terr } = await supabase
+          .from('trending_posts')
+          .select('slug')
+          .order('created_at', { ascending: false })
+          .limit(3);
+
+        if (!terr && tdata && tdata.length > 0) {
+          const slugs = tdata.map(r => r.slug);
+          const all = await getSupabasePosts();
+          const matched = slugs.map(s => all.find(p => p.slug === s)).filter(Boolean);
+          setTrendingPosts(matched.slice(0, 3));
+          setLoading(false);
+          return;
+        }
+
+        // Fallback: compute top by views
+        const posts = await getSupabasePosts();
+        const sorted = posts
+          .sort((a, b) => (b.views || 0) - (a.views || 0))
+          .slice(0, 3);
+        setTrendingPosts(sorted);
+      } catch (error) {
+        console.error('Error loading trending posts:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTrendingPosts();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="h-12 bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse"></div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {trendingPosts.map((post, index) => (
+        <Link
+          key={post.id}
+          to={`/blog/${post.slug}`}
+          className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition group"
+        >
+          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-lhilit-1 to-lhilit-2 dark:from-dhilit-1 dark:to-dhilit-2 flex items-center justify-center text-white text-sm font-bold">
+            {index + 1}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate group-hover:text-lhilit-1 dark:group-hover:text-dhilit-1 transition">
+              {post.title}
+            </p>
+            {/* views intentionally hidden in list */}
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+};
 
 const BlogPost = () => {
   const { slug } = useParams();
@@ -706,7 +870,43 @@ const BlogPost = () => {
             </motion.section>
             </motion.article>
            &nbsp;
+
+          {/* Monthly Archive and Trending Posts Section */}
+          <div className="py-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Monthly Archive */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                viewport={{ once: true }}
+              >
+                <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">
+                    Monthly Archive
+                  </h3>
+                  <BlogPostMonthlyArchive />
+                </div>
+              </motion.div>
+
+              {/* Trending Posts */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                viewport={{ once: true }}
+              >
+                <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">
+                    Trending Posts
+                  </h3>
+                  <BlogPostTrendingPosts />
+                </div>
+              </motion.div>
+            </div>
+          </div>
           <hr />
+          
           <div className="py-8"></div>
           <Footer />
           <div className="pb-12"></div>

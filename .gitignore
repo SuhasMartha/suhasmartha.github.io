@@ -133,6 +133,3 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
-
-# supabase migration
-supabase/migrations/

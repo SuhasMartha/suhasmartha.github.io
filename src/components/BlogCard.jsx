@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
-const BlogCard = ({ post, index }) => {
+const BlogCard = ({ post, index, hideMetadata = false }) => {
   const formatDate = (dateString) => {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     return new Date(dateString).toLocaleDateString(undefined, options);
@@ -42,25 +42,27 @@ const BlogCard = ({ post, index }) => {
 
       {/* Content */}
       <div className="p-7">
-        {/* Tags */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          {post.tags.slice(0, 3).map((tag) => (
-            <span
-              key={tag}
-              className="px-3 py-1 text-xs font-semibold rounded-full bg-lhilit-1/10 text-lhilit-1 dark:bg-dhilit-1/10 dark:text-dhilit-1 border border-lhilit-1/20 dark:border-dhilit-1/20 hover:bg-lhilit-1/20 dark:hover:bg-dhilit-1/20 transition-colors duration-300"
-            >
-              {tag}
-            </span>
-          ))}
-          {post.tags.length > 3 && (
-            <span className="px-2 py-1 text-xs font-medium rounded-md bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-              +{post.tags.length - 3}
-            </span>
-          )}
-        </div>
+        {/* Tags - Only show if not hideMetadata */}
+        {!hideMetadata && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {post.tags.slice(0, 3).map((tag) => (
+              <span
+                key={tag}
+                className="px-3 py-1 text-xs font-semibold rounded-full bg-lhilit-1/10 text-lhilit-1 dark:bg-dhilit-1/10 dark:text-dhilit-1 border border-lhilit-1/20 dark:border-dhilit-1/20 hover:bg-lhilit-1/20 dark:hover:bg-dhilit-1/20 transition-colors duration-300"
+              >
+                {tag}
+              </span>
+            ))}
+            {post.tags.length > 3 && (
+              <span className="px-2 py-1 text-xs font-medium rounded-md bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                +{post.tags.length - 3}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Title */}
-        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 line-clamp-2 group-hover:text-lhilit-1 dark:group-hover:text-dhilit-1 transition-colors duration-300 leading-tight">
+        <h2 className={`text-xl font-bold text-gray-900 dark:text-gray-100 line-clamp-2 group-hover:text-lhilit-1 dark:group-hover:text-dhilit-1 transition-colors duration-300 leading-tight ${hideMetadata ? 'mb-6' : 'mb-4'}`}>
           <Link to={`/blog/${post.slug}`} className="hover:underline">
             {post.title}
           </Link>
@@ -71,22 +73,24 @@ const BlogCard = ({ post, index }) => {
           {post.excerpt}
         </p>
 
-        {/* Meta Info */}
-        <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-r from-lhilit-1 to-lhilit-2 dark:from-dhilit-1 dark:to-dhilit-2 flex items-center justify-center text-white font-semibold text-xs shadow-md">
-              {post.author.split(' ').map(n => n[0]).join('')}
+        {/* Meta Info - Only show if not hideMetadata */}
+        {!hideMetadata && (
+          <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full bg-gradient-to-r from-lhilit-1 to-lhilit-2 dark:from-dhilit-1 dark:to-dhilit-2 flex items-center justify-center text-white font-semibold text-xs shadow-md">
+                {post.author.split(' ').map(n => n[0]).join('')}
+              </div>
+              <span className="font-medium text-gray-700 dark:text-gray-300">{post.author}</span>
             </div>
-            <span className="font-medium text-gray-700 dark:text-gray-300">{post.author}</span>
+            
+            <div className="flex items-center gap-2 text-xs">
+              <time>{formatDate(post.date || post.created_at)}</time>
+            </div>
           </div>
-          
-          <div className="flex items-center gap-2 text-xs">
-            <time>{formatDate(post.date || post.created_at)}</time>
-          </div>
-        </div>
+        )}
 
         {/* Read More Button */}
-        <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className='pt-4 border-t border-gray-200 dark:border-gray-700'>
           <Link
             to={`/blog/${post.slug}`}
             className="inline-flex items-center gap-2 text-lhilit-1 dark:text-dhilit-1 font-semibold hover:gap-3 transition-all duration-300 group/link text-sm"
