@@ -111,6 +111,7 @@ const MonthlyArchive = ({ onMonthClick, selectedMonth }) => {
 };
 
 const TrendingPosts = () => {
+  const navigate = useNavigate();
   const [trendingPosts, setTrendingPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -168,10 +169,10 @@ const TrendingPosts = () => {
       <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Trending Posts</h3>
       <div className="space-y-3">
         {trendingPosts.map((post, index) => (
-          <a
+          <button
             key={post.id}
-            href={`/blog/${post.slug}`}
-            className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition group"
+            onClick={() => navigate(`/blog/${post.slug}`)}
+            className="w-full flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition group text-left"
           >
             <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-lhilit-1 to-lhilit-2 dark:from-dhilit-1 dark:to-dhilit-2 flex items-center justify-center text-white text-sm font-bold">
               {index + 1}
@@ -182,7 +183,7 @@ const TrendingPosts = () => {
               </p>
               {/* views intentionally hidden in list */}
             </div>
-          </a>
+          </button>
         ))}
       </div>
     </div>

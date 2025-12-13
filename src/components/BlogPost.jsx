@@ -356,7 +356,6 @@ const BlogPost = () => {
           .from('blog_comments')
           .select('*')
           .eq('post_id', post.id)
-          .eq('approved', true)
           .order('created_at', { ascending: true });
 
         if (error) throw error;
@@ -415,11 +414,22 @@ const BlogPost = () => {
             name: commentData.name,
             email: commentData.email,
             comment: commentData.comment,
-            approved: false // Comments need approval by default
+            approved: true // Comments show immediately, admin can delete later
           }
         ]);
 
       if (error) throw error;
+
+      // Reload comments to show the newly posted comment
+      const { data, error: loadError } = await supabase
+        .from('blog_comments')
+        .select('*')
+        .eq('post_id', post.id)
+        .order('created_at', { ascending: true });
+
+      if (!loadError) {
+        setComments(data || []);
+      }
 
       setSubmitStatus('success');
       setCommentData({ name: '', email: '', comment: '' });

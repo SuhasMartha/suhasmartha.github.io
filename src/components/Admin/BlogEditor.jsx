@@ -289,10 +289,146 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
             </div>
 
             {/* Preview Content */}
-            <div className="prose prose-lg dark:prose-invert max-w-none">
+            <div className="prose prose-lg dark:prose-invert max-w-none prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-strong:text-gray-900 dark:prose-strong:text-gray-100 prose-code:text-lhilit-1 dark:prose-code:text-dhilit-1 prose-code:bg-gray-100 dark:prose-code:bg-gray-800 prose-pre:bg-gray-900 dark:prose-pre:bg-gray-800 prose-a:text-lhilit-1 dark:prose-a:text-dhilit-1 prose-a:no-underline hover:prose-a:underline">
               <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
+                remarkPlugins={[remarkGfm, remarkFootnotes]}
                 rehypePlugins={[rehypeHighlight]}
+                skipHtml={false}
+                components={{
+                  h1: ({children}) => <h1 className="text-4xl font-bold mt-12 mb-6 first:mt-0 text-gray-900 dark:text-gray-100">{children}</h1>,
+                  h2: ({children}) => <h2 className="text-3xl font-bold mt-10 mb-4 text-gray-900 dark:text-gray-100">{children}</h2>,
+                  h3: ({children}) => <h3 className="text-2xl font-bold mt-8 mb-3 text-gray-900 dark:text-gray-100">{children}</h3>,
+                  h4: ({children}) => <h4 className="text-xl font-bold mt-6 mb-2 text-gray-900 dark:text-gray-100">{children}</h4>,
+                  h5: ({children}) => <h5 className="text-lg font-semibold mt-5 mb-2 text-gray-900 dark:text-gray-100">{children}</h5>,
+                  h6: ({children}) => <h6 className="text-base font-semibold mt-4 mb-2 text-gray-900 dark:text-gray-100">{children}</h6>,
+                  p: ({children}) => <p className="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">{children}</p>,
+                  blockquote: ({children}) => (
+                    <blockquote className="border-l-4 border-lhilit-1 dark:border-dhilit-1 pl-4 py-2 my-6 italic text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-r-lg">
+                      {children}
+                    </blockquote>
+                  ),
+                  code: ({inline, children}) => 
+                    inline ? 
+                      <code className="text-lhilit-1 dark:text-dhilit-1 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm font-mono">{children}</code> :
+                      <code className="text-gray-100">{children}</code>,
+                  pre: ({children}) => <pre className="bg-gray-900 dark:bg-gray-800 text-gray-100 p-4 rounded-lg overflow-x-auto my-6 border border-gray-200 dark:border-gray-700">{children}</pre>,
+                  ul: ({children}) => <ul className="mb-4 space-y-2 pl-6 list-disc">{children}</ul>,
+                  ol: ({children}) => <ol className="mb-4 space-y-2 pl-6 list-decimal">{children}</ol>,
+                  li: ({children}) => <li className="text-gray-700 dark:text-gray-300">{children}</li>,
+                  strong: ({children}) => <strong className="text-gray-900 dark:text-gray-100 font-semibold">{children}</strong>,
+                  em: ({children}) => <em className="italic text-gray-800 dark:text-gray-200">{children}</em>,
+                  del: ({children}) => <del className="line-through text-gray-500 dark:text-gray-400">{children}</del>,
+                  hr: () => <hr className="my-8 border-gray-300 dark:border-gray-600" />,
+                  br: () => <br />,
+                  table: ({children}) => (
+                    <div className="overflow-x-auto my-6 rounded-lg border border-gray-300 dark:border-gray-600">
+                      <table className="w-full border-collapse bg-white dark:bg-gray-800">
+                        {children}
+                      </table>
+                    </div>
+                  ),
+                  thead: ({children}) => (
+                    <thead className="bg-gray-100 dark:bg-gray-700 border-b-2 border-gray-300 dark:border-gray-600">
+                      {children}
+                    </thead>
+                  ),
+                  tbody: ({children}) => (
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
+                      {children}
+                    </tbody>
+                  ),
+                  tr: ({children}) => (
+                    <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                      {children}
+                    </tr>
+                  ),
+                  th: ({children}) => (
+                    <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-gray-100 text-sm">
+                      {children}
+                    </th>
+                  ),
+                  td: ({children}) => (
+                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300 text-sm border-r border-gray-200 dark:border-gray-600 last:border-r-0">
+                      {children}
+                    </td>
+                  ),
+                  img: ({src, alt, ...props}) => (
+                    <img 
+                      src={src} 
+                      alt={alt || 'Blog image'} 
+                      loading="lazy"
+                      decoding="async"
+                      className="max-w-full h-auto rounded-lg my-6 shadow-md hover:shadow-lg transition-shadow"
+                      onError={(e) => {
+                        console.error('Image failed to load:', src);
+                        e.target.style.display = 'none';
+                      }}
+                      {...props}
+                    />
+                  ),
+                  html: ({value}) => {
+                    if (value.includes('<img')) {
+                      const srcMatch = value.match(/src=["']([^"']+)["']/);
+                      const altMatch = value.match(/alt=["']([^"']+)["']/);
+                      const src = srcMatch?.[1];
+                      const alt = altMatch?.[1] || 'Blog image';
+                      
+                      if (src) {
+                        return (
+                          <img 
+                            src={src} 
+                            alt={alt} 
+                            loading="lazy"
+                            decoding="async"
+                            className="max-w-full h-auto rounded-lg my-6 shadow-md hover:shadow-lg transition-shadow"
+                            onError={(e) => {
+                              console.error('Image failed to load:', src);
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                        );
+                      }
+                    }
+                    return <div dangerouslySetInnerHTML={{__html: value}} className="my-4" />;
+                  },
+                  sup: ({children}) => <sup className="text-lhilit-1 dark:text-dhilit-1 font-medium">{children}</sup>,
+                  a: ({href, children, ...props}) => {
+                    if (href?.startsWith('#')) {
+                      return (
+                        <a 
+                          href={href}
+                          className="text-lhilit-1 dark:text-dhilit-1 hover:underline font-medium"
+                          {...props}
+                        >
+                          {children}
+                        </a>
+                      );
+                    }
+                    return (
+                      <a 
+                        href={href} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-lhilit-1 dark:text-dhilit-1 hover:underline font-medium"
+                        {...props}
+                      >
+                        {children}
+                      </a>
+                    );
+                  },
+                  section: ({children, ...props}) => {
+                    if (props.className?.includes('footnotes')) {
+                      return (
+                        <section {...props} className="mt-12 pt-6 border-t-2 border-gray-300 dark:border-gray-600">
+                          <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                            {children}
+                          </div>
+                        </section>
+                      );
+                    }
+                    return <section {...props}>{children}</section>;
+                  },
+                }}
               >
                 {formData.content || '*No content yet...*'}
               </ReactMarkdown>
@@ -397,15 +533,149 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
                 placeholder="Write your post content in Markdown format..."
               />
             ) : (
-              <div className="min-h-[500px] p-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
-                <div className="prose prose-sm dark:prose-invert max-w-none">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm, remarkFootnotes]}
-                    rehypePlugins={[rehypeHighlight]}
-                  >
-                    {formData.content || '*No content yet...*'}
-                  </ReactMarkdown>
-                </div>
+              <div className="min-h-[500px] p-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 prose prose-sm dark:prose-invert max-w-none prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-strong:text-gray-900 dark:prose-strong:text-gray-100 prose-code:text-lhilit-1 dark:prose-code:text-dhilit-1 prose-code:bg-gray-100 dark:prose-code:bg-gray-800 prose-pre:bg-gray-900 dark:prose-pre:bg-gray-800 prose-a:text-lhilit-1 dark:prose-a:text-dhilit-1 prose-a:no-underline hover:prose-a:underline">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm, remarkFootnotes]}
+                  rehypePlugins={[rehypeHighlight]}
+                  skipHtml={false}
+                  components={{
+                    h1: ({children}) => <h1 className="text-4xl font-bold mt-12 mb-6 first:mt-0 text-gray-900 dark:text-gray-100">{children}</h1>,
+                    h2: ({children}) => <h2 className="text-3xl font-bold mt-10 mb-4 text-gray-900 dark:text-gray-100">{children}</h2>,
+                    h3: ({children}) => <h3 className="text-2xl font-bold mt-8 mb-3 text-gray-900 dark:text-gray-100">{children}</h3>,
+                    h4: ({children}) => <h4 className="text-xl font-bold mt-6 mb-2 text-gray-900 dark:text-gray-100">{children}</h4>,
+                    h5: ({children}) => <h5 className="text-lg font-semibold mt-5 mb-2 text-gray-900 dark:text-gray-100">{children}</h5>,
+                    h6: ({children}) => <h6 className="text-base font-semibold mt-4 mb-2 text-gray-900 dark:text-gray-100">{children}</h6>,
+                    p: ({children}) => <p className="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">{children}</p>,
+                    blockquote: ({children}) => (
+                      <blockquote className="border-l-4 border-lhilit-1 dark:border-dhilit-1 pl-4 py-2 my-6 italic text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-r-lg">
+                        {children}
+                      </blockquote>
+                    ),
+                    code: ({inline, children}) => 
+                      inline ? 
+                        <code className="text-lhilit-1 dark:text-dhilit-1 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm font-mono">{children}</code> :
+                        <code className="text-gray-100">{children}</code>,
+                    pre: ({children}) => <pre className="bg-gray-900 dark:bg-gray-800 text-gray-100 p-4 rounded-lg overflow-x-auto my-6 border border-gray-200 dark:border-gray-700">{children}</pre>,
+                    ul: ({children}) => <ul className="mb-4 space-y-2 pl-6 list-disc">{children}</ul>,
+                    ol: ({children}) => <ol className="mb-4 space-y-2 pl-6 list-decimal">{children}</ol>,
+                    li: ({children}) => <li className="text-gray-700 dark:text-gray-300">{children}</li>,
+                    strong: ({children}) => <strong className="text-gray-900 dark:text-gray-100 font-semibold">{children}</strong>,
+                    em: ({children}) => <em className="italic text-gray-800 dark:text-gray-200">{children}</em>,
+                    del: ({children}) => <del className="line-through text-gray-500 dark:text-gray-400">{children}</del>,
+                    hr: () => <hr className="my-8 border-gray-300 dark:border-gray-600" />,
+                    br: () => <br />,
+                    table: ({children}) => (
+                      <div className="overflow-x-auto my-6 rounded-lg border border-gray-300 dark:border-gray-600">
+                        <table className="w-full border-collapse bg-white dark:bg-gray-800">
+                          {children}
+                        </table>
+                      </div>
+                    ),
+                    thead: ({children}) => (
+                      <thead className="bg-gray-100 dark:bg-gray-700 border-b-2 border-gray-300 dark:border-gray-600">
+                        {children}
+                      </thead>
+                    ),
+                    tbody: ({children}) => (
+                      <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
+                        {children}
+                      </tbody>
+                    ),
+                    tr: ({children}) => (
+                      <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        {children}
+                      </tr>
+                    ),
+                    th: ({children}) => (
+                      <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-gray-100 text-sm">
+                        {children}
+                      </th>
+                    ),
+                    td: ({children}) => (
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300 text-sm border-r border-gray-200 dark:border-gray-600 last:border-r-0">
+                        {children}
+                      </td>
+                    ),
+                    img: ({src, alt, ...props}) => (
+                      <img 
+                        src={src} 
+                        alt={alt || 'Blog image'} 
+                        loading="lazy"
+                        decoding="async"
+                        className="max-w-full h-auto rounded-lg my-6 shadow-md hover:shadow-lg transition-shadow"
+                        onError={(e) => {
+                          console.error('Image failed to load:', src);
+                          e.target.style.display = 'none';
+                        }}
+                        {...props}
+                      />
+                    ),
+                    html: ({value}) => {
+                      if (value.includes('<img')) {
+                        const srcMatch = value.match(/src=["']([^"']+)["']/);
+                        const altMatch = value.match(/alt=["']([^"']+)["']/);
+                        const src = srcMatch?.[1];
+                        const alt = altMatch?.[1] || 'Blog image';
+                        
+                        if (src) {
+                          return (
+                            <img 
+                              src={src} 
+                              alt={alt} 
+                              loading="lazy"
+                              decoding="async"
+                              className="max-w-full h-auto rounded-lg my-6 shadow-md hover:shadow-lg transition-shadow"
+                              onError={(e) => {
+                                console.error('Image failed to load:', src);
+                                e.target.style.display = 'none';
+                              }}
+                            />
+                          );
+                        }
+                      }
+                      return <div dangerouslySetInnerHTML={{__html: value}} className="my-4" />;
+                    },
+                    sup: ({children}) => <sup className="text-lhilit-1 dark:text-dhilit-1 font-medium">{children}</sup>,
+                    a: ({href, children, ...props}) => {
+                      if (href?.startsWith('#')) {
+                        return (
+                          <a 
+                            href={href}
+                            className="text-lhilit-1 dark:text-dhilit-1 hover:underline font-medium"
+                            {...props}
+                          >
+                            {children}
+                          </a>
+                        );
+                      }
+                      return (
+                        <a 
+                          href={href} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="text-lhilit-1 dark:text-dhilit-1 hover:underline font-medium"
+                          {...props}
+                        >
+                          {children}
+                        </a>
+                      );
+                    },
+                    section: ({children, ...props}) => {
+                      if (props.className?.includes('footnotes')) {
+                        return (
+                          <section {...props} className="mt-12 pt-6 border-t-2 border-gray-300 dark:border-gray-600">
+                            <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                              {children}
+                            </div>
+                          </section>
+                        );
+                      }
+                      return <section {...props}>{children}</section>;
+                    },
+                  }}
+                >
+                  {formData.content || '*No content yet...*'}
+                </ReactMarkdown>
               </div>
             )}
           </div>

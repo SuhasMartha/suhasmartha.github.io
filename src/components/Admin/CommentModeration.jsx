@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "../../lib/supabase";
 
-const CommentModeration = ({ comments, onCommentModerated }) => {
+const CommentModeration = ({ comments, onApprove, onReject, onToggleApproval, onBulkApprove }) => {
   const [loading, setLoading] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [filter, setFilter] = useState("all"); // all, pending, approved
@@ -16,7 +16,7 @@ const CommentModeration = ({ comments, onCommentModerated }) => {
         .eq('id', commentId);
 
       if (error) throw error;
-      onCommentModerated();
+      onApprove(commentId);
     } catch (error) {
       console.error('Error approving comment:', error);
       alert('Failed to approve comment');
@@ -36,7 +36,7 @@ const CommentModeration = ({ comments, onCommentModerated }) => {
         .eq('id', commentId);
 
       if (error) throw error;
-      onCommentModerated();
+      onReject(commentId);
     } catch (error) {
       console.error('Error deleting comment:', error);
       alert('Failed to delete comment');
@@ -54,7 +54,7 @@ const CommentModeration = ({ comments, onCommentModerated }) => {
         .eq('id', commentId);
 
       if (error) throw error;
-      onCommentModerated();
+      onToggleApproval(commentId);
     } catch (error) {
       console.error('Error updating comment:', error);
       alert('Failed to update comment');
@@ -78,7 +78,7 @@ const CommentModeration = ({ comments, onCommentModerated }) => {
         .in('id', pendingComments.map(c => c.id));
       
       if (error) throw error;
-      onCommentModerated();
+      onBulkApprove();
     } catch (error) {
       console.error('Error bulk approving comments:', error);
       alert('Error bulk approving comments: ' + error.message);
