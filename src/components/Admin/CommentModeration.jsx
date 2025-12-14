@@ -1,45 +1,32 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { supabase } from "../../lib/supabase";
+
 
 const CommentModeration = ({ comments, onApprove, onReject, onToggleApproval, onBulkApprove }) => {
   const [loading, setLoading] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [filter, setFilter] = useState("all"); // all, pending, approved
 
+  // Supabase import removed - using props for actions
+
   const handleApproveComment = async (commentId) => {
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('blog_comments')
-        .update({ approved: true })
-        .eq('id', commentId);
-
-      if (error) throw error;
-      onApprove(commentId);
+      await onApprove(commentId);
     } catch (error) {
-      console.error('Error approving comment:', error);
-      alert('Failed to approve comment');
+      console.error('Error in approve delegate:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleRejectComment = async (commentId) => {
-    if (!confirm('Are you sure you want to delete this comment?')) return;
-    
+    // Confirm dialog is handled by the parent component (AdminDashboard)
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('blog_comments')
-        .delete()
-        .eq('id', commentId);
-
-      if (error) throw error;
-      onReject(commentId);
+      await onReject(commentId);
     } catch (error) {
-      console.error('Error deleting comment:', error);
-      alert('Failed to delete comment');
+      console.error('Error in reject delegate:', error);
     } finally {
       setLoading(false);
     }
@@ -48,49 +35,30 @@ const CommentModeration = ({ comments, onApprove, onReject, onToggleApproval, on
   const handleToggleApproval = async (commentId, currentStatus) => {
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('blog_comments')
-        .update({ approved: !currentStatus })
-        .eq('id', commentId);
-
-      if (error) throw error;
-      onToggleApproval(commentId);
+      await onToggleApproval(commentId, currentStatus);
     } catch (error) {
-      console.error('Error updating comment:', error);
-      alert('Failed to update comment');
+      console.error('Error in toggle delegate:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleBulkApprove = async () => {
-    const pendingComments = comments.filter(comment => !comment.approved);
-    if (pendingComments.length === 0) {
-      alert('No pending comments to approve');
-      return;
-    }
-
+    // Parent handles the logic and checking for pending comments
     setBulkLoading(true);
     try {
-      const { error } = await supabase
-        .from('blog_comments')
-        .update({ approved: true })
-        .in('id', pendingComments.map(c => c.id));
-      
-      if (error) throw error;
-      onBulkApprove();
+      await onBulkApprove();
     } catch (error) {
-      console.error('Error bulk approving comments:', error);
-      alert('Error bulk approving comments: ' + error.message);
+      console.error('Error in bulk approve delegate:', error);
     } finally {
       setBulkLoading(false);
     }
   };
 
   const formatDate = (dateString) => {
-    const options = { 
-      year: 'numeric', 
-      month: 'short', 
+    const options = {
+      year: 'numeric',
+      month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -110,7 +78,7 @@ const CommentModeration = ({ comments, onApprove, onReject, onToggleApproval, on
   const getAvatarColor = (name) => {
     const colors = [
       'bg-red-500',
-      'bg-blue-500', 
+      'bg-blue-500',
       'bg-green-500',
       'bg-yellow-500',
       'bg-purple-500',
@@ -118,12 +86,12 @@ const CommentModeration = ({ comments, onApprove, onReject, onToggleApproval, on
       'bg-indigo-500',
       'bg-teal-500'
     ];
-    
+
     let hash = 0;
     for (let i = 0; i < name.length; i++) {
       hash = name.charCodeAt(i) + ((hash << 5) - hash);
     }
-    
+
     return colors[Math.abs(hash) % colors.length];
   };
 
@@ -173,31 +141,28 @@ const CommentModeration = ({ comments, onApprove, onReject, onToggleApproval, on
           )}
           <button
             onClick={() => setFilter("all")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-300 ${
-              filter === "all"
-                ? "bg-lhilit-1 dark:bg-dhilit-1 text-white"
-                : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-            }`}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-300 ${filter === "all"
+              ? "bg-lhilit-1 dark:bg-dhilit-1 text-white"
+              : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+              }`}
           >
             All ({comments.length})
           </button>
           <button
             onClick={() => setFilter("pending")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-300 ${
-              filter === "pending"
-                ? "bg-yellow-500 text-white"
-                : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-            }`}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-300 ${filter === "pending"
+              ? "bg-yellow-500 text-white"
+              : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+              }`}
           >
             Pending ({pendingCount})
           </button>
           <button
             onClick={() => setFilter("approved")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-300 ${
-              filter === "approved"
-                ? "bg-green-500 text-white"
-                : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-            }`}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-300 ${filter === "approved"
+              ? "bg-green-500 text-white"
+              : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+              }`}
           >
             Approved ({approvedCount})
           </button>
@@ -216,11 +181,11 @@ const CommentModeration = ({ comments, onApprove, onReject, onToggleApproval, on
             No {filter === "all" ? "" : filter} comments
           </h3>
           <p className="text-gray-600 dark:text-gray-400">
-            {filter === "pending" 
+            {filter === "pending"
               ? "All comments have been moderated."
               : filter === "approved"
-              ? "No approved comments yet."
-              : "No comments have been submitted yet."
+                ? "No approved comments yet."
+                : "No comments have been submitted yet."
             }
           </p>
         </div>
@@ -232,11 +197,10 @@ const CommentModeration = ({ comments, onApprove, onReject, onToggleApproval, on
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className={`bg-white dark:bg-gray-900 rounded-lg shadow-lg border p-6 ${
-                comment.approved 
-                  ? "border-green-200 dark:border-green-800" 
-                  : "border-yellow-200 dark:border-yellow-800"
-              }`}
+              className={`bg-white dark:bg-gray-900 rounded-lg shadow-lg border p-6 ${comment.approved
+                ? "border-green-200 dark:border-green-800"
+                : "border-yellow-200 dark:border-yellow-800"
+                }`}
             >
               {/* Comment header */}
               <div className="flex items-start justify-between mb-4">
@@ -245,7 +209,7 @@ const CommentModeration = ({ comments, onApprove, onReject, onToggleApproval, on
                   <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold ${getAvatarColor(comment.name)}`}>
                     {getInitials(comment.name)}
                   </div>
-                  
+
                   {/* Comment info */}
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-1">
@@ -255,15 +219,14 @@ const CommentModeration = ({ comments, onApprove, onReject, onToggleApproval, on
                       <span className="text-sm text-gray-500 dark:text-gray-400">
                         {comment.email}
                       </span>
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        comment.approved 
-                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                          : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                      }`}>
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${comment.approved
+                        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                        : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                        }`}>
                         {comment.approved ? "Approved" : "Pending"}
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
                       <span>{formatDate(comment.created_at)}</span>
                       {comment.blog_posts && (
@@ -314,7 +277,7 @@ const CommentModeration = ({ comments, onApprove, onReject, onToggleApproval, on
                         Approve
                       </div>
                     </motion.button>
-                    
+
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
@@ -346,7 +309,7 @@ const CommentModeration = ({ comments, onApprove, onReject, onToggleApproval, on
                         Unapprove
                       </div>
                     </motion.button>
-                    
+
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}

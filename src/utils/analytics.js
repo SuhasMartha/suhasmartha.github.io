@@ -24,7 +24,7 @@ class BlogAnalytics {
 
     try {
       const clientInfo = this.getClientInfo();
-      
+
       const { error } = await supabase
         .from('post_views')
         .insert([
@@ -55,7 +55,7 @@ class BlogAnalytics {
     }
 
     const readingTime = Math.floor((Date.now() - this.sessionStartTime) / 1000);
-    
+
     if (readingTime < 5) return; // Ignore very short sessions
 
     try {

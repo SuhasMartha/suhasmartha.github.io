@@ -63,7 +63,7 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
         .from('blog_comments')
         .select('*')
         .order('created_at', { ascending: false });
-      
+
       if (error) throw error;
       setComments(data || []);
     } catch (error) {
@@ -79,11 +79,11 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
     try {
       // Get real analytics data
       const allAnalytics = await analytics.getAllPostsAnalytics();
-      
+
       const totalViews = allAnalytics.reduce((sum, item) => sum + (item.views || 0), 0);
       const totalShares = allAnalytics.reduce((sum, item) => sum + (item.shares || 0), 0);
       const totalLikes = allAnalytics.reduce((sum, item) => sum + (item.likes || 0), 0);
-      
+
       const analyticsData = {
         totalViews,
         totalShares,
@@ -114,7 +114,7 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
         .from('blog_comments')
         .update({ approved: true })
         .eq('id', commentId);
-      
+
       if (error) throw error;
       await fetchComments();
     } catch (error) {
@@ -124,13 +124,13 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
 
   const handleRejectComment = async (commentId) => {
     if (!confirm('Are you sure you want to delete this comment?')) return;
-    
+
     try {
       const { error } = await supabase
         .from('blog_comments')
         .delete()
         .eq('id', commentId);
-      
+
       if (error) throw error;
       await fetchComments();
     } catch (error) {
@@ -144,7 +144,7 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
         .from('blog_comments')
         .update({ approved: !currentStatus })
         .eq('id', commentId);
-      
+
       if (error) throw error;
       await fetchComments();
     } catch (error) {
@@ -163,7 +163,7 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
         .from('blog_comments')
         .update({ approved: true })
         .in('id', pendingComments.map(c => c.id));
-      
+
       if (error) throw error;
       await fetchComments();
     } catch (error) {
@@ -259,7 +259,7 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
       if (selectedSlugs.length > 0) {
         const rows = selectedSlugs.map(slug => ({ slug }));
         const { error: insError } = await supabase.from('trending_posts').insert(rows);
-        
+
         if (insError) {
           // Table might not exist - try to create it and retry
           if (insError.code === 'PGRST102' || insError.message.includes('not found')) {
@@ -373,10 +373,9 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
                   <div className="flex-1">
                     <h4 className="font-medium">{post.title}</h4>
                     <p className="text-sm text-gray-500">
-                      {new Date(post.date).toLocaleDateString()} • {post.author} • 
-                      <span className={`ml-1 px-2 py-1 rounded-full text-xs ${
-                        post.published !== false ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                      }`}>
+                      {new Date(post.date).toLocaleDateString()} • {post.author} •
+                      <span className={`ml-1 px-2 py-1 rounded-full text-xs ${post.published !== false ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                        }`}>
                         {post.published !== false ? 'Published' : 'Draft'}
                       </span>
                     </p>
@@ -415,9 +414,9 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
       case 'analytics':
         return (
           <div className="space-y-6">
-            <PostAnalytics 
-              posts={posts} 
-              comments={comments} 
+            <PostAnalytics
+              posts={posts}
+              comments={comments}
               analyticsData={{
                 ...stats,
                 totalViews: analyticsData.totalViews || 0,
@@ -425,7 +424,7 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
                 totalLikes: analyticsData.totalLikes || 0,
                 avgViewsPerPost: analyticsData.avgViewsPerPost || 0,
                 engagementRate: analyticsData.engagementRate || 0
-              }} 
+              }}
             />
 
             {/* Trending Manager */}
@@ -443,7 +442,7 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
 
               {loadingTrending ? (
                 <div className="space-y-2">
-                  {[1,2,3,4].map(i => (
+                  {[1, 2, 3, 4].map(i => (
                     <div key={i} className="h-10 bg-gray-100 dark:bg-gray-700 rounded animate-pulse"></div>
                   ))}
                 </div>
@@ -456,8 +455,8 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
                   {posts.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
                       <p>No posts available. Posts may still be loading.</p>
-                      <button 
-                        onClick={() => window.location.reload()} 
+                      <button
+                        onClick={() => window.location.reload()}
                         className="mt-4 text-blue-600 hover:underline"
                       >
                         Reload Page
@@ -469,34 +468,33 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
                         {posts && posts.length > 0 ? posts.map((p, idx) => {
                           const slug = p.slug || p.id || `post-${idx}`;
                           const checked = trendingSlugs.includes(slug);
-                          const isDisabled = !checked && trendingSlugs.length >= 3;
+                          const isDisabled = false; // No limit on trending posts
                           const position = trendingSlugs.indexOf(slug) + 1;
-                          
+
                           const handleToggle = () => {
                             if (checked) {
                               // Remove from trending
                               setTrendingSlugs(prev => prev.filter(s => s !== slug));
-                            } else if (trendingSlugs.length < 3) {
+                            } else {
                               // Add to trending
                               setTrendingSlugs(prev => [...prev, slug]);
                             }
                           };
-                          
+
                           return (
                             <div
                               key={slug}
                               onClick={handleToggle}
-                              className={`flex items-center gap-3 p-3 rounded-lg transition border-2 cursor-pointer ${
-                                isDisabled 
-                                  ? 'opacity-50 cursor-not-allowed' 
+                              className={`flex items-center gap-3 p-3 rounded-lg transition border-2 cursor-pointer ${isDisabled
+                                  ? 'opacity-50 cursor-not-allowed'
                                   : 'hover:bg-gray-50 dark:hover:bg-gray-700'
-                              } ${checked ? 'bg-lhilit-1/10 dark:bg-dhilit-1/10 border-lhilit-1 dark:border-dhilit-1' : 'border-transparent'}`}
+                                } ${checked ? 'bg-lhilit-1/10 dark:bg-dhilit-1/10 border-lhilit-1 dark:border-dhilit-1' : 'border-transparent'}`}
                             >
                               <input
                                 type="checkbox"
                                 checked={checked}
                                 disabled={isDisabled}
-                                onChange={() => {}}
+                                onChange={() => { }}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                 }}
@@ -524,7 +522,7 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
                           disabled={loadingTrending || trendingSlugs.length === 0}
                           className="px-4 py-2 bg-lhilit-1 dark:bg-dhilit-1 text-white rounded-lg font-medium hover:opacity-90 disabled:opacity-60"
                         >
-                          Save Trending ({trendingSlugs.length}/3)
+                          Save Trending ({trendingSlugs.length})
                         </button>
 
                         <button
@@ -534,7 +532,7 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
                           Reload
                         </button>
 
-                        <div className="text-sm text-gray-500 ml-auto">Select up to 3 posts</div>
+                        <div className="text-sm text-gray-500 ml-auto">Select posts to appear in trending</div>
                       </div>
                     </>
                   )}
@@ -662,11 +660,10 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors relative ${
-                  activeTab === tab.id
+                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors relative ${activeTab === tab.id
                     ? 'border-lhilit-1 dark:border-dhilit-1 text-lhilit-1 dark:text-dhilit-1'
                     : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
+                  }`}
               >
                 <span className="mr-2">{tab.icon}</span>
                 {tab.label}

@@ -21,7 +21,7 @@ const PostAnalytics = ({ posts, comments, analyticsData }) => {
     try {
       const analyticsData = await analytics.getAllPostsAnalytics();
       const analyticsMap = {};
-      
+
       analyticsData.forEach(item => {
         if (item.blog_posts) {
           analyticsMap[item.post_id] = {
@@ -32,7 +32,7 @@ const PostAnalytics = ({ posts, comments, analyticsData }) => {
           };
         }
       });
-      
+
       setRealTimeAnalytics(analyticsMap);
     } catch (error) {
       console.error('Error loading real-time analytics:', error);
@@ -40,20 +40,30 @@ const PostAnalytics = ({ posts, comments, analyticsData }) => {
   };
   const calculatePostStats = () => {
     const stats = {};
-    
+
     posts.forEach(post => {
       const postComments = comments.filter(comment => comment.post_id === post.id);
+      // Use real-time analytics if available, otherwise 0
+      const views = realTimeAnalytics[post.id]?.views || 0;
+
       stats[post.id] = {
         comments: postComments.length,
         approvedComments: postComments.filter(c => c.approved).length,
         pendingComments: postComments.filter(c => !c.approved).length,
-        views: Math.floor(Math.random() * 1000) + 50, // Simulated views - replace with real data
-        engagement: postComments.length > 0 ? (postComments.length / 100 * 100).toFixed(1) : 0
+        views: views,
+        engagement: views > 0 ? ((postComments.length + (realTimeAnalytics[post.id]?.likes || 0)) / views * 100).toFixed(1) : 0
       };
     });
-    
+
     setPostStats(stats);
   };
+
+  // Re-calculate stats when realTimeAnalytics changes
+  useEffect(() => {
+    if (Object.keys(realTimeAnalytics).length > 0) {
+      calculatePostStats();
+    }
+  }, [realTimeAnalytics]);
 
   const initializeSEOData = () => {
     const seo = {};
@@ -88,7 +98,7 @@ const PostAnalytics = ({ posts, comments, analyticsData }) => {
         [postId]: { ...prev[postId], ...seoUpdates }
       }));
       setEditingSEO(null);
-      
+
       // Show success message
       const successDiv = document.createElement('div');
       successDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
@@ -97,7 +107,7 @@ const PostAnalytics = ({ posts, comments, analyticsData }) => {
       setTimeout(() => document.body.removeChild(successDiv), 3000);
     } catch (error) {
       console.error('Error updating SEO:', error);
-      
+
       // Show error message
       const errorDiv = document.createElement('div');
       errorDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
@@ -157,16 +167,16 @@ const PostAnalytics = ({ posts, comments, analyticsData }) => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-200 dark:border-gray-700"
+          className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-200 dark:border-gray-700 min-h-[140px] flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Views (Simulated)</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <div className="flex items-start justify-between">
+            <div className="flex-1 min-w-0 mr-4">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 truncate" title="Total Views">Total Views</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-2 truncate">
                 {analyticsData.totalViews?.toLocaleString() || '0'}
               </p>
             </div>
-            <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+            <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex-shrink-0">
               <svg className="h-6 w-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -179,16 +189,16 @@ const PostAnalytics = ({ posts, comments, analyticsData }) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-200 dark:border-gray-700"
+          className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-200 dark:border-gray-700 min-h-[140px] flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg. Comments/Post</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <div className="flex items-start justify-between">
+            <div className="flex-1 min-w-0 mr-4">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 truncate" title="Avg. Comments/Post">Avg. Comments/Post</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-2 truncate">
                 {posts.length > 0 ? (analyticsData.totalComments / posts.length).toFixed(1) : '0'}
               </p>
             </div>
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex-shrink-0">
               <svg className="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.959 8.959 0 01-4.906-1.476L3 21l2.476-5.094A8.959 8.959 0 013 12c0-4.418 3.582-8 8-8s8 3.582 8 8z" />
               </svg>
@@ -200,16 +210,16 @@ const PostAnalytics = ({ posts, comments, analyticsData }) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-200 dark:border-gray-700"
+          className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-200 dark:border-gray-700 min-h-[140px] flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Likes</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <div className="flex items-start justify-between">
+            <div className="flex-1 min-w-0 mr-4">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 truncate" title="Total Likes">Total Likes</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-2 truncate">
                 {analyticsData.totalLikes || 0}
               </p>
             </div>
-            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg flex-shrink-0">
               <svg className="h-6 w-6 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
@@ -221,16 +231,16 @@ const PostAnalytics = ({ posts, comments, analyticsData }) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-200 dark:border-gray-700"
+          className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-200 dark:border-gray-700 min-h-[140px] flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg. Views/Post</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <div className="flex items-start justify-between">
+            <div className="flex-1 min-w-0 mr-4">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 truncate" title="Avg. Views/Post">Avg. Views/Post</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-2 truncate">
                 {analyticsData.avgViewsPerPost || 0}
               </p>
             </div>
-            <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+            <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex-shrink-0">
               <svg className="h-6 w-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
               </svg>
@@ -251,18 +261,18 @@ const PostAnalytics = ({ posts, comments, analyticsData }) => {
           </h3>
           <div className="space-y-4">
             {topPosts.map((post, index) => (
-              <div key={post.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <div className="flex-1">
-                  <h4 className="font-medium text-gray-900 dark:text-gray-100 truncate">
+              <div key={post.id} className="flex items-start justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div className="flex-1 min-w-0 mr-3">
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100 line-clamp-2 break-words" title={post.title}>
                     {post.title}
                   </h4>
-                  <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400 mt-1">
                     <span>{formatDate(post.created_at)}</span>
                     <span>•</span>
                     <span>{post.stats.comments} comments</span>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 flex-shrink-0">
                   <span className="text-2xl font-bold text-lhilit-1 dark:text-dhilit-1">
                     #{index + 1}
                   </span>
@@ -283,15 +293,14 @@ const PostAnalytics = ({ posts, comments, analyticsData }) => {
           <div className="space-y-4">
             {recentPosts.map((post) => (
               <div key={post.id} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                <div className="flex items-start justify-between mb-2">
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100 line-clamp-1 flex-1 min-w-0 mr-2" title={post.title}>
                     {post.title}
                   </h4>
-                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                    post.published 
-                      ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                      : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                  }`}>
+                  <span className={`px-2 py-1 text-xs font-semibold rounded-full flex-shrink-0 ${post.published
+                    ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                    : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                    }`}>
                     {post.published ? "Published" : "Draft"}
                   </span>
                 </div>
@@ -322,7 +331,7 @@ const PostAnalytics = ({ posts, comments, analyticsData }) => {
             All Posts Analytics
           </h3>
         </div>
-        
+
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-800">
@@ -367,11 +376,10 @@ const PostAnalytics = ({ posts, comments, analyticsData }) => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center space-x-2">
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        post.published 
-                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                          : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                      }`}>
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${post.published
+                        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                        : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                        }`}>
                         {post.published ? "Published" : "Draft"}
                       </span>
                       {post.featured && (
@@ -438,7 +446,7 @@ const PostAnalytics = ({ posts, comments, analyticsData }) => {
                 </svg>
               </button>
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -455,7 +463,7 @@ const PostAnalytics = ({ posts, comments, analyticsData }) => {
                   placeholder="Enter SEO-optimized title"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   📄 Meta Description
@@ -474,7 +482,7 @@ const PostAnalytics = ({ posts, comments, analyticsData }) => {
                   {seoFormData.metaDescription?.length || 0}/160 characters
                 </p>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   🏷️ Keywords
@@ -493,7 +501,7 @@ const PostAnalytics = ({ posts, comments, analyticsData }) => {
                   Separate keywords with commas
                 </p>
               </div>
-              
+
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={() => setEditingSEO(null)}
