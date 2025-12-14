@@ -11,211 +11,299 @@ if (typeof window !== 'undefined') {
 const staticPosts = [
   {
     id: 1,
-    title: "Building a Modern Blog: The Tech Stack Behind This Site",
-    slug: "building-modern-blog-tech-stack",
-    date: "2025-01-07",
-    tags: ["React", "Tailwind CSS", "Framer Motion", "GSAP", "Web Development"],
+    title: "Understanding Our Fallback Blog System - Keeping Content Accessible During Maintenance",
+    slug: "fallback-blog-system",
+    date: "2025-12-15",
+    tags: ["Technical", "Infrastructure", "Supabase", "Error Handling", "Web Development"],
     author: "Suhas Martha",
-    readTime: "8 min read",
-    image: "https://images.pexels.com/photos/11035380/pexels-photo-11035380.jpeg?auto=compress&cs=tinysrgb&w=800",
-    excerpt: "A deep dive into the technologies and techniques used to create this modern, responsive blog using React, Tailwind CSS, Framer Motion, and GSAP.",
+    readTime: "5 min read",
+    image: "https://images.ctfassets.net/em6l9zw4tzag/XSTZBaleYdbbtE4oiJesW/7709970e4cca45b0850617837206c4c1/1023_CRT9_404-hero.jpg?w=2520&h=945&fl=progressive&q=50&fm=jpg",
+    excerpt: "Learn how our portfolio implements an intelligent fallback blog system that keeps content accessible even when Supabase database experiences outages. Understand graceful degradation, resilient architecture, and why this matters for modern web applications.",
     featured: true,
-    content: `# Building a Modern Blog: The Tech Stack Behind This Site
+    content: `Ever wondered what happens when your blog database temporarily goes offline? Discover how our portfolio implements an intelligent fallback system that ensures content remains accessible even when cloud services experience hiccups. Learn about graceful degradation in web development and why this matters for user experience.
 
-Welcome to my blog! Today, I want to share the journey of building this very website you're reading on. As a developer, I believe in using modern tools and techniques to create engaging, performant, and beautiful web experiences.
+  ## What Is a Fallback Blog System?
 
-## 🚀 The Foundation: React & Vite
+  **fallback blog system** is a critical reliability feature that ensures your content remains accessible even when primary services (like Supabase database) experience temporary outages or connectivity issues.
 
-At the core of this blog lies **React 19**, the latest version of Facebook's popular JavaScript library. React provides the component-based architecture that makes this site maintainable and scalable.
+  Think of it like a backup power generator—when the main power grid fails, the generator automatically kicks in to keep essential systems running. Similarly, when our Supabase database is unavailable, a pre-built, statically-stored blog content takes over seamlessly.
 
-### Why React 19?
+  ### The Problem It Solves
 
-- **Improved Performance**: Better rendering optimizations
-- **Enhanced Developer Experience**: Better error boundaries and debugging
-- **Modern Hooks**: Latest React features for state management
-- **Future-Ready**: Built for the modern web
+  Without a fallback system:
 
-I chose **Vite** as the build tool because of its lightning-fast development server and optimized production builds.
+  - ❌ Users see broken pages or error messages
+  - ❌ Content becomes completely inaccessible
+  - ❌ Loss of trust in the platform
+  - ❌ Poor user experience during maintenance windows
 
-\`\`\`javascript
-// Example of a React component used in this blog
-const BlogPost = ({ title, content, date }) => {
-  return (
-    <article className="prose dark:prose-invert max-w-none">
-      <header>
-        <h1>{title}</h1>
-        <time>{date}</time>
-      </header>
-      <div dangerouslySetInnerHTML={{ __html: content }} />
-    </article>
-  );
-};
-\`\`\`
+  With our fallback system:
 
-## 🎨 Styling with Tailwind CSS 4
+  - ✅ Users always see content (static or dynamic)
+  - ✅ Graceful degradation without visible errors
+  - ✅ Continuous availability during repairs
+  - ✅ Professional, reliable experience
 
-The visual appeal of this blog comes from **Tailwind CSS 4**, the latest version of the utility-first CSS framework.
+  ***
 
-### Key Features:
-- **Custom Color Palette**: Carefully chosen colors that work in both light and dark modes
-- **Responsive Design**: Mobile-first approach ensuring great experience on all devices
-- **Dark Mode Support**: Seamless theme switching with the interactive light bulb
-- **Custom Utilities**: Extended Tailwind with project-specific utility classes
+  ## How Our Fallback Blog Works
 
-## ✨ Animations with Framer Motion
+  ### What Happens Behind the Scenes
 
-To bring life to the interface, I integrated **Framer Motion** for smooth transitions and engaging animations.
+  1. **Connection Check** — Application attempts to connect to Supabase
+  2. **Timeout Detection** — If no response within 5 seconds, triggers fallback
+  3. **Content Switch** — Seamlessly loads locally-stored markdown files
+  4. **User Unaware** — Content displays normally, user experiences no interruption
+  5. **Logging** — Issue is logged for our monitoring dashboard
 
-### Animation Features:
-- **Page Transitions**: Smooth entry animations for all components
-- **Scroll Animations**: Elements animate as they come into view
-- **Hover Effects**: Interactive feedback on cards and buttons
-- **Stagger Animations**: Sequential animations for lists and grids
+  ***
 
-## 🎭 Advanced Interactions with GSAP
+  ## When Does the Fallback Activate?
 
-For complex animations like the interactive light bulb theme toggle, I used **GSAP** (GreenSock Animation Platform).
+  The fallback blog system automatically activates during:
 
-### GSAP Powers:
-- **SVG Morphing**: The light bulb cord animation
-- **Draggable Interactions**: Pull the cord to toggle themes
-- **Timeline Control**: Precise animation sequencing
-- **Performance**: Hardware-accelerated animations
 
-## 🌓 Theme System
+  | Scenario | Duration | Impact |
+  | :-- | :-- | :-- |
+  | **Database Maintenance** | 5-30 minutes | Scheduled, planned downtime |
+  | **Network Connectivity Issues** | Minutes to hours | Temporary network disruptions |
+  | **Supabase Service Outage** | 15 minutes - 2 hours | Rare, usually quick resolution |
+  | **API Rate Limiting** | Seconds to minutes | High traffic surge handling |
+  | **Regional Server Issues** | 5-60 minutes | Cloud provider incidents |
+  | **Development/Testing** | Varies | When we're testing new features |
 
-The interactive light bulb isn't just decorative—it's a fully functional theme toggle that demonstrates advanced animation techniques!
 
-### Theme Features:
-- **System Preference Detection**: Respects user's OS theme preference
-- **Local Storage**: Remembers your theme choice
-- **Smooth Transitions**: CSS custom properties for seamless switching
-- **Interactive Animation**: Pull the cord or click to toggle
+  ***
 
-## 📱 Responsive Design
+  ## What You See as a User
 
-Built with a mobile-first approach, this blog looks great on all devices:
+  ### When Supabase is Online ✅
 
-- **Flexible Grid System**: CSS Grid and Flexbox for complex layouts
-- **Responsive Typography**: Fluid text scaling across screen sizes
-- **Touch-Friendly**: Optimized for mobile interactions
-- **Performance**: Optimized images and lazy loading
+  - **Full Dynamic Features** — Latest blog posts instantly
+  - **Comments \& Interactions** — Real-time feedback visible
+  - **Admin Features** — Blog management available
+  - **Analytics** — View counts, engagement metrics
+  - **Email Notifications** — Contact form submissions trigger emails immediately
 
-## 🔒 Security & Performance
 
-Security and performance are built into the foundation:
+  ### When Supabase is Offline (Fallback Active) ⚙️
 
-### Security Features:
-- **Content Security Policy**: Protection against XSS attacks
-- **Secure Headers**: HTTPS enforcement and security headers
-- **Input Sanitization**: Safe handling of user content
-- **Production Hardening**: Security measures for production deployment
+  - **Static Blog Content** — Pre-built posts still visible
+  - **Readable, Full Experience** — Content quality unchanged
+  - **No Comments/Interactions** — Since these require database
+  - **No Admin Panel** — Can't add/edit posts temporarily
+  - **No Email Alerts** — Submissions cached locally, processed later
+  - **Visual Indicator** — Subtle "Offline Mode" badge (optional)
 
-### Performance Optimizations:
-- **Code Splitting**: Lazy loading of components
-- **Image Optimization**: WebP format with fallbacks
-- **Bundle Analysis**: Optimized bundle sizes
-- **Caching Strategy**: Efficient browser caching
+  ***
 
-## 🎯 SEO Optimization
+  ### Performance Benefits
 
-Every blog post is optimized for search engines:
+  - **Instant Load Time** — Static markdown loads in <100ms
+  - **No Network Dependency** — Works even without internet briefly
+  - **Reduced Server Load** — Local files don't hit Supabase
+  - **Better SEO** — Static content helps search engines index
+  - **Improved Resilience** — Multiple failure points handled
 
-- **Meta Tags**: Dynamic title, description, and keywords
-- **Open Graph**: Social media sharing optimization
-- **Structured Data**: Schema markup for rich snippets
-- **Semantic HTML**: Proper heading hierarchy and landmarks
+  ***
 
-## 🛠 Development Experience
+  ## What We're Working On
 
-The development setup prioritizes developer experience:
+  We're actively working to ensure maximum uptime and reliability:
 
-- **Hot Module Replacement**: Instant updates during development
-- **TypeScript Support**: Type safety and better IDE support
-- **ESLint & Prettier**: Code quality and consistent formatting
-- **Git Hooks**: Pre-commit checks for code quality
+  ### Current Monitoring
 
-## 🚀 Deployment & CI/CD
+  ✅ **24/7 Uptime Monitoring** — Real-time alerts for any issues
+  ✅ **Automated Health Checks** — Every 5 minutes
+  ✅ **Fallback System Testing** — Weekly validation
+  ✅ **Performance Metrics** — Track response times
 
-Modern deployment pipeline:
+  ### Ongoing Improvements
 
-- **GitHub Actions**: Automated testing and deployment
-- **Netlify**: Fast global CDN and edge functions
-- **Environment Variables**: Secure configuration management
-- **Performance Monitoring**: Real-time performance insights
+  🔧 **Connection Pooling** — Reduce database connection overhead
+  🔧 **Caching Strategy** — Implement Redis caching layer
+  🔧 **Regional Redundancy** — Multiple Supabase regions for failover
+  🔧 **Advanced Monitoring** — Custom alerting dashboard
+  🔧 **Load Balancing** — Distribute traffic during peaks
 
----
+  ### Coming Soon
 
-*Thanks for reading! This blog post itself demonstrates many of the features discussed. Stay tuned for more posts about web development, React patterns, and modern CSS techniques.*`
+  🚀 **Multi-Region Replication** — Blog content across global servers
+  🚀 **Advanced Offline Support** — Service Worker integration
+  🚀 **Predictive Scaling** — ML-based auto-scaling
+  🚀 **Enhanced Fallback UI** — Improved offline mode indicators
+
+  ***
+
+  ## Communication During Issues
+
+  When maintenance or issues occur, we'll keep you informed:
+
+  **Real-Time Updates** — Check our [Status Page](https://status.suhasmartha.com) for live updates
+  **Twitter/X** — [@SuhasMarthadev](https://twitter.com/suhasmartha) for announcements
+  **Email Notifications** — Subscribe to our newsletter for incident reports
+  **Contact Form** — Report issues directly (cached during outages, processed when online)
+
+  ***
+
+  ## Why This Matters for Web Development
+
+  This fallback system demonstrates several important web development principles:
+
+  ### 1. **Graceful Degradation**
+
+  Providing reduced but functional experience instead of complete failure.
+
+  ### 2. **Defensive Programming**
+
+  Assuming external services will fail and building accordingly.
+
+  ### 3. **User-Centric Design**
+
+  Prioritizing user experience over technical perfection.
+
+  ### 4. **Redundancy**
+
+  Having multiple paths to deliver core functionality.
+
+  ### 5. **Transparency**
+
+  Communicating with users about system status honestly.
+
+  ***
+
+  ## Conclusion
+
+  Our fallback blog system exemplifies **resilient architecture**—designing systems that work even when things go wrong. Rather than hoping our database never fails, we've built intelligence into the system to handle failures gracefully.
+
+  The next time you see this system in action during maintenance:
+
+  - You'll understand why it's there
+  - You'll appreciate the engineering behind it
+  - You'll know we're working to get everything back online
+
+  **Thank you for your patience and understanding as we maintain and improve your experience.**
+
+  ***
+
+  ## FAQ
+
+  **Q: Why does my blog look different sometimes?**
+  A: During database maintenance, the static fallback loads. Content is identical, but some interactive features temporarily unavailable.
+
+  **Q: Will I lose my contact form submission?**
+  A: No! Submissions are cached locally and processed when the system comes back online.
+
+  **Q: How often does this happen?**
+  A: Very rarely. We perform maintenance typically at 2-4 AM IST on Sundays to minimize impact.
+
+  **Q: Can I see the fallback blog on purpose?**
+  A: Yes, developers can test it by adding ?offline=true to the blog URL (local development only).
+
+  **Q: What if the issue takes longer to fix?**
+  A: We'll post updates to our status page, social media, and send email notifications.
+`
   },
   {
     id: 2,
-    title: "Creating a Blog: From Idea to Launch",
-    slug: "creating-a-blog-2025-guide",
+    title: "Building a Modern Portfolio Website: A Complete Tech Stack and Development Journey",
+    slug: "Modern-Portfolio-Website",
     date: "2025-08-12",
-    tags: ["Blogging", "Web Development", "WordPress", "Wix", "Tech Stack"],
+    tags: ["Portfolio","GitHub","Web Dev","Blogging","Project"],
     author: "Suhas Martha",
-    readTime: "9 min read",
-    image: "https://images.pexels.com/photos/270404/pexels-photo-270404.jpeg?auto=compress&cs=tinysrgb&w=800",
-    excerpt: "A practical guide to creating your own blog in 2025, including choosing the right platform, building your tech stack, creating engaging content, and launching to the world.",
+    readTime: "6 min read",
+    image: "https://i.postimg.cc/sgrJqRS8/Screenshot-2025-08-30-161941.png",
+    excerpt: "Creating a standout developer portfolio is essential for showcasing your skills, projects, and professional journey. In this blog post, we dive into the development of **suhasmartha.github.io**, a modern, responsive portfolio website built with React, Vite, Tailwind CSS, and powered by Supabase for backend services. You’ll learn about the tech stack, architecture, feature implementations, deployment workflow, and how Supabase elevates the site with dynamic content and data handling.",
     featured: false,
-    content: `# Creating a Blog: From Idea to Launch
+    content: `
+  ## Project Overview
 
-Welcome! In this post, I'll walk you through the journey of **creating a blog** in 2025. Whether you're a hobbyist writer, a business owner, or just curious about digital publishing, you'll learn the modern steps and technologies needed to launch a blog that gets noticed.
+  **suhasmartha.github.io** is a single-page application portfolio that highlights:
 
-## 🚀 Step 1: Choosing Your Platform
+  - Personal bio and skills
+  - Education, experience, and fun facts
+  - Project showcases (full-stack and frontend)
+  - Technical blog with MDX-powered posts
+  - Interactive games section
+  - Contact form with real-time backend storage
 
-The first decision is picking the **blogging platform** that fits your needs. There are two main categories:
+  The goal was to create a performant, accessible, and visually engaging site that reflects a developers capabilities and personality.
 
-- **Hosted platforms**: WordPress.com, Medium, Wix, Blogger. Great for beginners.
-- **Self-hosted platforms**: WordPress.org, Jekyll, Ghost, Next.js with MDX. Ideal for developers who want full control.
+  ***
 
-**Popular options in 2025:**
-- **WordPress**: Highly customizable, thousands of plugins, strong SEO.
-- **Wix**: Beginner-friendly interface, built-in AI tools, excellent for monetization and design flexibility.
-- **Medium**: Minimalist, easy-to-use, built-in audience.
-- **Jekyll**: Static-site generator for those comfortable with Markdown and Git.
+  ## Tech Stack
 
-## 🏗 Step 2: Planning Your Tech Stack
+  | Layer | Technology | Role |
+  | :-- | :-- | :-- |
+  | UI Framework | React 19 | Component-driven interface |
+  | Bundler \& Dev Server | Vite | Fast HMR, optimized builds |
+  | Styling | Tailwind CSS 3.x | Utility-first design, dark/light mode support |
+  | Routing | React Router v7 | Hash-based SPA navigation |
+  | Backend as a Service | Supabase | Database, Auth, Functions, real-time services |
+  | Hosting | GitHub Pages | Free, global CDN |
 
-Your **tech stack** determines your blog's speed, security, and future growth.
 
-- **Frontend**: React, Next.js, Gatsby, or vanilla HTML/CSS/JS.
-- **Backend**: Node.js, Express.js, PHP (for WordPress), or serverless (Netlify, Vercel).
-- **Styling**: Tailwind CSS, Sass, or Bootstrap.
-- **Animations**: Framer Motion, GSAP.
-- **Content Format**: Markdown, MDX (Markdown + JSX for React), or WYSIWYG editors.
+  ***
 
-## 🎨 Step 3: Design and User Experience
+  ## Frontend Features \& UX
 
-Great blogs prioritize user experience:
+  ### Responsive \& Accessible Design
 
-- **Clean Layout**: Readable typography, proper spacing
-- **Mobile-First**: Responsive design for all devices
-- **Fast Loading**: Optimized images and minimal JavaScript
-- **Navigation**: Clear menu structure and search functionality
+  - Mobile-first layouts with Tailwind breakpoints
+  - Dark/light theme toggle using CSS variables
+  - Semantic HTML and ARIA roles for screen readers
 
-## 📝 Step 4: Content Strategy
 
-Content is king, but strategy is queen:
+  ### Advanced Animations
 
-- **Define Your Niche**: What unique perspective do you offer?
-- **Content Calendar**: Plan posts in advance
-- **SEO Optimization**: Research keywords and optimize meta tags
-- **Engagement**: Encourage comments and social sharing
+  - **Framer Motion** for page transitions and hover effects
+  - **GSAP** timelines for scroll-triggered and complex animations
 
-## 🚀 Step 5: Launch and Promotion
 
-Getting your blog noticed:
+  ### Interactive Sections
 
-- **Social Media**: Share on relevant platforms
-- **Email Newsletter**: Build a subscriber list
-- **Guest Posting**: Write for other blogs in your niche
-- **Analytics**: Track performance and optimize
+  - **Projects**: Animated cards, filterable by category
+  - **Blog**: MDX-powered posts with dynamic routing
+  - **Games**: In-browser classics like Tic-Tac-Toe, Snake, Tetris, and more
+  - **Contact**: Animated form with real-time feedback
 
----
+  ***
 
-*Ready to start your blogging journey? The tools and techniques are more accessible than ever in 2025!*`
+  ## Supabase Backend Integration
+
+  By adopting Supabase, the portfolio gains robust backend capabilities without managing servers.
+
+  1. **Contact Form Handling**
+      - Submissions are validated client-side and inserted into a Supabase table.
+      - Real-time storage of inquiries triggers email notifications via Supabase Functions.
+  2. **Blog Content Management**
+      - Posts are authored in Markdown with frontmatter metadata stored in Supabase.
+      - At build time, Vite fetches post data via Supabase's REST API for dynamic previews.
+  3. **Authentication \& Admin Interface**
+      - **Supabase Auth** secures an admin dashboard for drafting and publishing posts.
+      - Role-based policies restrict write access to authenticated users.
+  4. **Analytics \& Usage Tracking**
+      - Page views, form submissions, and event logs stream into Supabase for real-time dashboards.
+      - Custom analytics interface displays unique visitors, popular posts, and conversion metrics.
+
+  ***
+
+  ## Future Enhancements
+
+  - **Progressive Web App (PWA)** capabilities for offline access.
+  - **Comment system** for blog posts.
+  - **Video tutorials** and embedded demos.
+  - **Multi-language support** for global reach.
+  - **Custom domain** with enhanced branding.
+
+  ***
+
+  ## Conclusion
+
+  Building **suhasmartha.github.io** demonstrates how modern web tools and backend services can coalesce into a fast, interactive, and maintainable portfolio site. By leveraging React, Vite, Tailwind CSS, and Supabase, developers can create rich digital resumes that not only showcase projects but also handle dynamic content, authentication, and real-time interactions, all with minimal infrastructure overhead.
+
+  Ready to build your own? Explore the full [GitHub repository](https://github.com/SuhasMartha/suhasmartha.github.io), fork it, and start customizing a portfolio that highlights your unique story and skills.
+`
   }
 ];
 
