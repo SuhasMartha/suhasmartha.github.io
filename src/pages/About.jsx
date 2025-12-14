@@ -56,7 +56,7 @@ const About = () => {
           Quick about me...
         </motion.p>
         <AboutMini container={container} container2={container2} />
-        
+
         {/* Education Section */}
         <section className="headsectdiv" id="education">
           <Titles htitle="education" />
@@ -80,7 +80,7 @@ const About = () => {
           <Titles htitle="funfact" />
         </section>
         <FunFacts />
-        
+
         &nbsp;
         <hr />
         <div className="py-8"></div>

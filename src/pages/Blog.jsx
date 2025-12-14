@@ -16,12 +16,12 @@ const MonthlyArchive = ({ onMonthClick, selectedMonth }) => {
       try {
         const posts = await getSupabasePosts();
         const archive = {};
-        
+
         posts.forEach(post => {
           const date = new Date(post.date || post.created_at);
           const year = date.getFullYear();
           const monthYear = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
-          
+
           if (!archive[year]) {
             archive[year] = {};
           }
@@ -30,16 +30,16 @@ const MonthlyArchive = ({ onMonthClick, selectedMonth }) => {
           }
           archive[year][monthYear].push(post);
         });
-        
+
         setArchiveData(archive);
-        
+
         // Keep all years collapsed by default
         setExpandedYears({});
       } catch (error) {
         console.error('Error loading archive data:', error);
       }
     };
-    
+
     loadArchiveData();
   }, []);
 
@@ -76,7 +76,7 @@ const MonthlyArchive = ({ onMonthClick, selectedMonth }) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
               </svg>
             </button>
-            
+
             {expandedYears[year] && (
               <div className="space-y-2 pl-2">
                 {Object.entries(archiveData[year])
@@ -85,18 +85,16 @@ const MonthlyArchive = ({ onMonthClick, selectedMonth }) => {
                     <button
                       key={monthYear}
                       onClick={() => onMonthClick(monthYear)}
-                      className={`w-full flex items-center justify-between p-3 rounded-lg transition ${
-                        selectedMonth === monthYear
-                          ? "bg-lhilit-1 dark:bg-dhilit-1 text-white"
-                          : "bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                      }`}
+                      className={`w-full flex items-center justify-between p-3 rounded-lg transition ${selectedMonth === monthYear
+                        ? "bg-lhilit-1 dark:bg-dhilit-1 text-white"
+                        : "bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        }`}
                     >
                       <span className="text-sm">{monthYear.split(' ')[0]} {monthYear.split(' ')[1]}</span>
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        selectedMonth === monthYear
-                          ? "bg-white/30 text-white"
-                          : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
-                      }`}>
+                      <span className={`text-xs px-2 py-1 rounded-full ${selectedMonth === monthYear
+                        ? "bg-white/30 text-white"
+                        : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+                        }`}>
                         {posts.length}
                       </span>
                     </button>
@@ -222,7 +220,7 @@ const Blog = () => {
       setPosts(supabasePosts);
       setFilteredPosts(supabasePosts);
     };
-    
+
     loadPosts();
   }, []);
 
@@ -270,7 +268,7 @@ const Blog = () => {
   };
   // Get all unique tags
   const allTags = ["All", ...new Set(posts.flatMap(post => post.tags))];
-  
+
   const [featuredPosts, setFeaturedPosts] = useState([]);
   const [recentPosts, setRecentPosts] = useState([]);
 
@@ -281,14 +279,14 @@ const Blog = () => {
       setFeaturedPosts(featured);
       setRecentPosts(recent);
     };
-    
+
     loadFeaturedAndRecent();
   }, []);
 
   // SEO metadata
   useEffect(() => {
     document.title = "Blog - Suhas Martha | Tech Insights";
-    
+
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) {
       metaDescription.setAttribute("content", "Explore my blog for insights on web development, React, JavaScript, CSS, and modern web technologies. Learn from practical examples and tutorials.");
@@ -341,7 +339,7 @@ const Blog = () => {
     filtered = filtered.slice();
 
     // Sort posts based on selected sort order
-    switch(sortOrder) {
+    switch (sortOrder) {
       case "a-z":
         filtered.sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base', numeric: true }));
         break;
@@ -369,11 +367,11 @@ const Blog = () => {
     <>
       {/* Background */}
       <div className="fixed inset-0 z-[-2] bg-white bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))] dark:bg-neutral-950 dark:bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]"></div>
-      
+
       <Navbar />
-      
-      <div className="min-h-screen pt-20">
-        <div className="mycontainer">
+
+      <div className="min-h-screen pt-28">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
           {/* Hero Section */}
           <motion.section
             initial={{ opacity: 0, y: 30 }}
@@ -385,7 +383,7 @@ const Blog = () => {
               Welcome to My <span className="texthilit1">Blog</span>
             </h1>
             <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto leading-relaxed">
-              Dive into the world of web development, modern technologies, and creative solutions. 
+              Dive into the world of web development, modern technologies, and creative solutions.
               I share insights, tutorials, and experiences from my journey as a developer.
             </p>
           </motion.section>
@@ -435,11 +433,10 @@ const Blog = () => {
                       <button
                         key={tag}
                         onClick={() => setSelectedTag(tag)}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-                          selectedTag === tag
-                            ? "bg-lhilit-1 dark:bg-dhilit-1 text-white shadow-lg"
-                            : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-lhilit-1/10 dark:hover:bg-dhilit-1/10 hover:text-lhilit-1 dark:hover:text-dhilit-1"
-                        }`}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${selectedTag === tag
+                          ? "bg-lhilit-1 dark:bg-dhilit-1 text-white shadow-lg"
+                          : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-lhilit-1/10 dark:hover:bg-dhilit-1/10 hover:text-lhilit-1 dark:hover:text-dhilit-1"
+                          }`}
                       >
                         {tag}
                       </button>
@@ -462,7 +459,7 @@ const Blog = () => {
                 <div className="w-1 h-8 bg-gradient-to-b from-lhilit-1 to-lhilit-2 dark:from-dhilit-1 dark:to-dhilit-2 rounded-full"></div>
                 <h2 className="head4">Featured Posts</h2>
               </div>
-              
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {featuredPosts.map((post, index) => (
                   <BlogCard key={post.id} post={post} index={index} />
@@ -482,12 +479,12 @@ const Blog = () => {
                 <div className="w-1 h-8 bg-gradient-to-b from-lhilit-1 to-lhilit-2 dark:from-dhilit-1 dark:to-dhilit-2 rounded-full"></div>
                 <h2 className="head4">
                   {selectedMonth ? `Posts from ${selectedMonth}` :
-                   selectedTag === "All" && !searchTerm ? "All Posts" : 
-                   searchTerm ? `Search Results for "${searchTerm}"` : 
-                   `Posts tagged with "${selectedTag}"`}
+                    selectedTag === "All" && !searchTerm ? "All Posts" :
+                      searchTerm ? `Search Results for "${searchTerm}"` :
+                        `Posts tagged with "${selectedTag}"`}
                 </h2>
               </div>
-              
+
               <div className="flex items-center gap-3">
                 <div className="text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
                   {filteredPosts.length} post{filteredPosts.length !== 1 ? 's' : ''} found
@@ -578,11 +575,11 @@ const Blog = () => {
                 </div>
                 <h3 className="flex justify-center text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">No posts found</h3>
                 <p className="flex justify-center text-gray-600 dark:text-gray-400 mb-6">
-                  {searchTerm 
+                  {searchTerm
                     ? "Try adjusting your search terms or browse all posts."
                     : selectedMonth
-                    ? `No posts found for ${selectedMonth}.`
-                    : `No posts found for the "${selectedTag}" tag. Try selecting a different tag.`
+                      ? `No posts found for ${selectedMonth}.`
+                      : `No posts found for the "${selectedTag}" tag. Try selecting a different tag.`
                   }
                 </p>
                 <button
@@ -613,7 +610,7 @@ const Blog = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div>
-                <MonthlyArchive 
+                <MonthlyArchive
                   onMonthClick={setSelectedMonth}
                   selectedMonth={selectedMonth}
                 />
@@ -646,7 +643,7 @@ const Blog = () => {
               <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-2xl mx-auto">
                 Get notified when I publish new posts about web development, programming tips, and tech insights.
               </p>
-              <form 
+              <form
                 onSubmit={handleNewsletterSubmit}
                 className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto"
               >
@@ -660,7 +657,7 @@ const Blog = () => {
                   disabled={isSubmitting}
                   className="flex-1 px-4 py-3 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-lhilit-1 dark:focus:ring-dhilit-1 focus:border-transparent"
                 />
-                <button 
+                <button
                   type="submit"
                   disabled={isSubmitting}
                   className="px-6 py-3 bg-lhilit-1 dark:bg-dhilit-1 text-white rounded-full font-semibold hover:bg-lhilit-2 dark:hover:bg-dhilit-2 transition-colors duration-300 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
@@ -678,7 +675,7 @@ const Blog = () => {
                   )}
                 </button>
               </form>
-              
+
               {/* Status Messages */}
               {submitStatus === 'success' && (
                 <motion.div
@@ -714,7 +711,7 @@ const Blog = () => {
                 </motion.div>
               )}
             </div>
-           </motion.section>
+          </motion.section>
           &nbsp;
           <hr />
           <div className="py-8"></div>

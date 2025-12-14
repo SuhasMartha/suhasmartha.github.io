@@ -116,8 +116,8 @@ const Games = () => {
 
   const categories = ["All", "Arcade", "Puzzle", "Strategy", "Sports", "Educational"];
 
-  const filteredGames = selectedCategory === "All" 
-    ? games 
+  const filteredGames = selectedCategory === "All"
+    ? games
     : games.filter(game => game.category === selectedCategory);
 
   // Handle feedback form input changes
@@ -164,29 +164,29 @@ const Games = () => {
     }
   };
 
-const handlePlayGame = (game) => {
-  if (game.status === "available" && game.gameUrl) {
-    // If gameUrl is absolute (starts with http), open directly
-    if (game.gameUrl.startsWith("http")) {
-      window.open(game.gameUrl, "_blank");
-    } else {
-      // For local relative paths
-      const baseUrl = import.meta.env.PROD 
-        ? 'https://suhasmartha.github.io' 
-        : '';
-      const fullUrl = baseUrl + game.gameUrl;
-      window.open(fullUrl, "_blank");
+  const handlePlayGame = (game) => {
+    if (game.status === "available" && game.gameUrl) {
+      // If gameUrl is absolute (starts with http), open directly
+      if (game.gameUrl.startsWith("http")) {
+        window.open(game.gameUrl, "_blank");
+      } else {
+        // For local relative paths
+        const baseUrl = import.meta.env.PROD
+          ? 'https://suhasmartha.github.io'
+          : '';
+        const fullUrl = baseUrl + game.gameUrl;
+        window.open(fullUrl, "_blank");
+      }
     }
-  }
-};
+  };
 
   return (
     <>
       {/* Background */}
       <div className="fixed inset-0 z-[-2] bg-white bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))] dark:bg-neutral-950 dark:bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]"></div>
-      
+
       <Navbar />
-      
+
       <div className="min-h-screen pt-20">
         <div className="mycontainer">
           {/* Hero Section */}
@@ -216,11 +216,10 @@ const handlePlayGame = (game) => {
                 <button
                   key={category}
                   onClick={() => setSelectedCategory(category)}
-                  className={`px-6 py-3 rounded-full text-sm font-semibold transition-all duration-300 ${
-                    selectedCategory === category
+                  className={`px-6 py-3 rounded-full text-sm font-semibold transition-all duration-300 ${selectedCategory === category
                       ? "bg-lhilit-1 dark:bg-dhilit-1 text-white shadow-lg transform scale-105"
                       : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-lhilit-1/10 dark:hover:bg-dhilit-1/10 hover:text-lhilit-1 dark:hover:text-dhilit-1 hover:scale-105"
-                  }`}
+                    }`}
                 >
                   {category}
                 </button>
@@ -262,11 +261,10 @@ const handlePlayGame = (game) => {
                     <button
                       onClick={() => handlePlayGame(game)}
                       disabled={game.status === "coming-soon"}
-                      className={`w-full py-3 rounded-lg font-semibold transition-all duration-300 ${
-                        game.status === "available"
+                      className={`w-full py-3 rounded-lg font-semibold transition-all duration-300 ${game.status === "available"
                           ? "bg-lhilit-1 dark:bg-dhilit-1 text-white hover:bg-lhilit-2 dark:hover:bg-dhilit-2 hover:shadow-lg transform hover:scale-105 cursor-pointer"
                           : "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-                      }`}
+                        }`}
                     >
                       {game.status === "available" ? "Play Game" : "Coming Soon"}
                     </button>
@@ -275,106 +273,106 @@ const handlePlayGame = (game) => {
               ))}
             </div>
           </motion.section>
-          
+
           {/* Game Ideas / Bug Report Form */}
           <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.6 }}
-          className="mt-20 mb-16"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
+            className="mt-20 mb-16"
           >
-          <div className="bg-gradient-to-r from-lhilit-1/10 to-lhilit-2/10 dark:from-dhilit-1/10 dark:to-dhilit-2/10 rounded-2xl p-8 md:p-12 text-center border border-lhilit-1/20 dark:border-dhilit-1/20">
-          <h3 className="head4 mb-4">Got a Game Idea or Found a Bug?</h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-2xl mx-auto">
-            Share your cool new game ideas or report any bugs you've found so we can make the games even better!
-          </p>
-          <form
-            onSubmit={handleFeedbackSubmit}
-            className="flex flex-col gap-4 max-w-md mx-auto"
-          >
-          <input
-            type="text"
-            name="name"
-            value={feedbackData.name}
-            onChange={handleFeedbackInputChange}
-            placeholder="Name"
-            disabled={isSubmitting}
-            className="px-4 py-3 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-lhilit-1 dark:focus:ring-dhilit-1 focus:border-transparent disabled:opacity-50"
-          />
-            <input
-            type="email"
-            name="email"
-            value={feedbackData.name}
-            onChange={handleFeedbackInputChange}
-            placeholder="your@email.com"
-            disabled={isSubmitting}
-            className="px-4 py-3 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-lhilit-1 dark:focus:ring-dhilit-1 focus:border-transparent disabled:opacity-50"
-          />
-          <textarea
-            name="message"
-            value={feedbackData.message}
-            onChange={handleFeedbackInputChange}
-            placeholder="Describe your game idea or the bug you found..."
-            required
-            rows="4"
-            disabled={isSubmitting}
-            className="px-4 py-3 rounded-2xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-lhilit-1 dark:focus:ring-dhilit-1 focus:border-transparent disabled:opacity-50"
-          />
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="px-6 py-3 bg-lhilit-1 dark:bg-dhilit-1 text-white rounded-full font-semibold hover:bg-lhilit-2 dark:hover:bg-dhilit-2 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? (
-              <div className="flex items-center justify-center gap-2">
-                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span>Submitting...</span>
-              </div>
-            ) : (
-              'Submit'
-            )}
-              </button>
-            </form>
-            
-            {/* Status Messages */}
-            {submitStatus === 'success' && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-6 rounded-lg bg-green-50 border border-green-200 p-4 text-center dark:bg-green-900/20 dark:border-green-800 max-w-md mx-auto"
+            <div className="bg-gradient-to-r from-lhilit-1/10 to-lhilit-2/10 dark:from-dhilit-1/10 dark:to-dhilit-2/10 rounded-2xl p-8 md:p-12 text-center border border-lhilit-1/20 dark:border-dhilit-1/20">
+              <h3 className="head4 mb-4">Got a Game Idea or Found a Bug?</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-2xl mx-auto">
+                Share your cool new game ideas or report any bugs you've found so we can make the games even better!
+              </p>
+              <form
+                onSubmit={handleFeedbackSubmit}
+                className="flex flex-col gap-4 max-w-md mx-auto"
               >
-                <div className="flex items-center justify-center">
-                  <svg className="h-5 w-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <span className="text-green-700 dark:text-green-300 font-medium">
-                    Thanks for your feedback! We'll review it soon.
-                  </span>
-                </div>
-              </motion.div>
-            )}
+                <input
+                  type="text"
+                  name="name"
+                  value={feedbackData.name}
+                  onChange={handleFeedbackInputChange}
+                  placeholder="Name"
+                  disabled={isSubmitting}
+                  className="px-4 py-3 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-lhilit-1 dark:focus:ring-dhilit-1 focus:border-transparent disabled:opacity-50"
+                />
+                <input
+                  type="email"
+                  name="email"
+                  value={feedbackData.name}
+                  onChange={handleFeedbackInputChange}
+                  placeholder="your@email.com"
+                  disabled={isSubmitting}
+                  className="px-4 py-3 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-lhilit-1 dark:focus:ring-dhilit-1 focus:border-transparent disabled:opacity-50"
+                />
+                <textarea
+                  name="message"
+                  value={feedbackData.message}
+                  onChange={handleFeedbackInputChange}
+                  placeholder="Describe your game idea or the bug you found..."
+                  required
+                  rows="4"
+                  disabled={isSubmitting}
+                  className="px-4 py-3 rounded-2xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-lhilit-1 dark:focus:ring-dhilit-1 focus:border-transparent disabled:opacity-50"
+                />
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-6 py-3 bg-lhilit-1 dark:bg-dhilit-1 text-white rounded-full font-semibold hover:bg-lhilit-2 dark:hover:bg-dhilit-2 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Submitting...</span>
+                    </div>
+                  ) : (
+                    'Submit'
+                  )}
+                </button>
+              </form>
 
-            {submitStatus === 'error' && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-6 rounded-lg bg-red-50 border border-red-200 p-4 text-center dark:bg-red-900/20 dark:border-red-800 max-w-md mx-auto"
-              >
-                <div className="flex items-center justify-center">
-                  <svg className="h-5 w-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                  <span className="text-red-700 dark:text-red-300 font-medium">
-                    Failed to submit feedback. Please try again later.
-                  </span>
-                </div>
-              </motion.div>
-            )}
-          </div>
-         </motion.section>
+              {/* Status Messages */}
+              {submitStatus === 'success' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-6 rounded-lg bg-green-50 border border-green-200 p-4 text-center dark:bg-green-900/20 dark:border-green-800 max-w-md mx-auto"
+                >
+                  <div className="flex items-center justify-center">
+                    <svg className="h-5 w-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-green-700 dark:text-green-300 font-medium">
+                      Thanks for your feedback! We'll review it soon.
+                    </span>
+                  </div>
+                </motion.div>
+              )}
+
+              {submitStatus === 'error' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-6 rounded-lg bg-red-50 border border-red-200 p-4 text-center dark:bg-red-900/20 dark:border-red-800 max-w-md mx-auto"
+                >
+                  <div className="flex items-center justify-center">
+                    <svg className="h-5 w-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-red-700 dark:text-red-300 font-medium">
+                      Failed to submit feedback. Please try again later.
+                    </span>
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </motion.section>
 
           <hr />
           <div className="py-8"></div>

@@ -665,13 +665,13 @@ const BlogPost = () => {
         </Helmet>
       )}
 
-      <div className="min-h-screen pt-20">
-        <div className="mycontainer">
+      <div className="min-h-screen pt-26">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
           <motion.article
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="max-w-4xl mx-auto"
+            className="max-w-[60rem] mx-auto"
           >
             {/* Back Button */}
             <motion.div
@@ -682,7 +682,7 @@ const BlogPost = () => {
             >
               <Link
                 to="/blog"
-                className="inline-flex items-center gap-2 text-lhilit-1 dark:text-dhilit-1 hover:gap-3 transition-all duration-300 font-medium"
+                className="inline-flex items-center gap-1 text-xl text-lhilit-1 dark:text-dhilit-1 hover:gap-3 transition-all duration-300 font-medium"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -747,7 +747,7 @@ const BlogPost = () => {
                     </div>
                     <div>
                       <p className="font-medium text-gray-900 dark:text-gray-100">{post.author}</p>
-                      <p className="text-sm">Full Stack Developer</p>
+                      <p className="text-sm">{post.author_profession || 'Data Analyst'}</p>
                     </div>
                   </div>
                 </div>
@@ -834,7 +834,7 @@ const BlogPost = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.5 }}
-                className="prose prose-lg dark:prose-invert max-w-none prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-headings:scroll-mt-24 prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-strong:text-gray-900 dark:prose-strong:text-gray-100 prose-code:text-lhilit-1 dark:prose-code:text-dhilit-1 prose-code:bg-gray-100 dark:prose-code:bg-gray-800 prose-pre:bg-gray-900 dark:prose-pre:bg-gray-800 prose-a:text-lhilit-1 dark:prose-a:text-dhilit-1 prose-a:no-underline hover:prose-a:underline overflow-hidden min-w-0"
+                className="prose prose-xl dark:prose-invert max-w-none prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-headings:scroll-mt-24 prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-strong:text-gray-900 dark:prose-strong:text-gray-100 prose-code:text-lhilit-1 dark:prose-code:text-dhilit-1 prose-code:bg-gray-100 dark:prose-code:bg-gray-800 prose-pre:bg-gray-900 dark:prose-pre:bg-gray-800 prose-a:text-lhilit-1 dark:prose-a:text-dhilit-1 prose-a:no-underline hover:prose-a:underline overflow-hidden min-w-0"
               >
                 {post.content ? (
                   <ReactMarkdown
@@ -845,17 +845,17 @@ const BlogPost = () => {
                       h1: ({ children }) => {
                         const text = flattenText(children);
                         const id = slugify(text);
-                        return <h1 id={id} className="text-4xl font-bold mt-12 mb-6 first:mt-0 text-gray-900 dark:text-gray-100 group relative scroll-mt-24">{children}</h1>;
+                        return <h1 id={id} className="text-5xl font-bold mt-16 mb-8 first:mt-0 text-gray-900 dark:text-gray-100 group relative scroll-mt-24">{children}</h1>;
                       },
                       h2: ({ children }) => {
                         const text = flattenText(children);
                         const id = slugify(text);
-                        return <h2 id={id} className="text-3xl font-bold mt-10 mb-4 text-gray-900 dark:text-gray-100 group relative scroll-mt-24">{children}</h2>;
+                        return <h2 id={id} className="text-4xl font-bold mt-12 mb-6 text-gray-900 dark:text-gray-100 group relative scroll-mt-24">{children}</h2>;
                       },
                       h3: ({ children }) => {
                         const text = flattenText(children);
                         const id = slugify(text);
-                        return <h3 id={id} className="text-2xl font-bold mt-8 mb-3 text-gray-900 dark:text-gray-100 group relative scroll-mt-24">{children}</h3>;
+                        return <h3 id={id} className="text-3xl font-bold mt-10 mb-4 text-gray-900 dark:text-gray-100 group relative scroll-mt-24">{children}</h3>;
                       },
                       h4: ({ children }) => <h4 className="text-xl font-bold mt-6 mb-2 text-gray-900 dark:text-gray-100">{children}</h4>,
                       h5: ({ children }) => <h5 className="text-lg font-semibold mt-5 mb-2 text-gray-900 dark:text-gray-100">{children}</h5>,
