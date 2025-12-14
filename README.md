@@ -21,8 +21,10 @@ I enjoy transforming data into actionable insights and building intelligent solu
 
 ## 🚀 Live Portfolio
 
-📍 **Live Site:** [suhasmartha.github.io](https://suhasmartha.github.io/)
+📍 **Live Site:** [suhasmartha.github.io ↗](https://suhasmartha.github.io/)
+
 <img width="1919" height="944" alt="image" src="https://github.com/user-attachments/assets/34c7e3f5-fa7a-47a9-b9c6-264a1829b5b1" />
+
 <img width="1919" height="941" alt="image" src="https://github.com/user-attachments/assets/4b512f88-3f98-463d-bff8-0dc0ddb9a3a9" />
 
 ---
@@ -32,7 +34,8 @@ I enjoy transforming data into actionable insights and building intelligent solu
 - 🏠 Home  
 - 👤 About   
 - 📂 Projects  
-- 📜 Blog  
+- 📜 Blog
+- 🎮 Fun-Zone 
 - 📞 Contact  
 
 ---
@@ -96,10 +99,10 @@ _Note: Only the first 10 items are shown per directory due to API limitations. [
 
 ## 🔮 Future Updates
 
+- [x] Add Animations
+- [x] Improve Images & Visuals
+- [x] Write Blogs
 - [ ] Update Projects
-- [ ] Write Blogs
-- [ ] Add Animations
-- [ ] Improve Images & Visuals
 - [ ] Delete Unused Code
 - [ ] Set Up Custom Domain
 
@@ -114,13 +117,14 @@ _Note: Only the first 10 items are shown per directory due to API limitations. [
 | JavaScript      | Logic & Interactivity         |
 | React.js	      | Component-based UI            |
 | Tailwind CSS	  | Styling Framework             |
+| Supabse         | Backend                       |
 | GitHub Pages    | Deployment                    |
 | Git & GitHub    | Version Control               |
 
 **Language Composition:**
-- JavaScript: 89.6%
-- CSS: 9.1%
-- HTML: 1.3%
+- JavaScript: 94.1%
+- CSS: 4.8%
+- HTML: 1.1%
 
 ---
 
@@ -188,8 +192,7 @@ Licensed under the MIT License. See [LICENSE](LICENSE) for details.
 > Design inspired or referenced from [eliasdevis.github.io](https://eliasdevis.github.io/) & 
 > [https://nashnc.is-a.dev/#/](https://github.com/nashnc/portfolio)
 
----
 
 > Built with ❤️ by [Suhas](https://github.com/SuhasMartha)
 
-<sub>Last Updated: 14-08-2025</sub>
+<sub>Last Updated: 14-12-2025</sub>
