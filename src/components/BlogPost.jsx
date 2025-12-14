@@ -66,6 +66,111 @@ const rehypeNormalizeFootnotes = () => {
   };
 };
 
+
+/* --- Utility for TOC and Anchors --- */
+const stripMarkdown = (text) => {
+  return text
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Links: [text](url) -> text
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, '')  // Images: ![alt](url) -> empty
+    .replace(/(\*\*|__)(.*?)\1/g, '$2')      // Bold: **text** -> text
+    .replace(/(\*|_)(.*?)\1/g, '$2')         // Italic: *text* -> text
+    .replace(/`([^`]+)`/g, '$1')             // Code: `text` -> text
+    .replace(/#+\s+/g, '')                   // Headers: # text -> text
+    .replace(/\\/g, '')                      // Remove backslashes
+    .trim();
+};
+
+const slugify = (text) => {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')        // Replace spaces with -
+    .replace(/[^\w\-]+/g, '')    // Remove all non-word chars
+    .replace(/\-\-+/g, '-');     // Replace multiple - with single -
+};
+
+// Start: recursively extracting text from React children
+const flattenText = (children) => {
+  if (typeof children === 'string' || typeof children === 'number') {
+    return children;
+  }
+  if (Array.isArray(children)) {
+    return children.map(flattenText).join('');
+  }
+  if (React.isValidElement(children)) {
+    return flattenText(children.props.children);
+  }
+  return '';
+};
+
+const extractHeadings = (markdown) => {
+  const headingRegex = /^(#{1,6})\s+(.*)$/gm;
+  const headings = [];
+  let match;
+
+  while ((match = headingRegex.exec(markdown)) !== null) {
+    const level = match[1].length;
+    let text = match[2].trim();
+
+    // Clean the text for display
+    const cleanText = stripMarkdown(text);
+
+    if (level <= 3) { // Only capture h1-h3
+      headings.push({
+        id: slugify(cleanText),
+        text: cleanText,
+        level
+      });
+    }
+  }
+  return headings;
+};
+
+// Table of Contents Component
+const TableOfContents = ({ headings }) => {
+  if (!headings || headings.length === 0) return null;
+
+  const handleScroll = (e, id) => {
+    e.preventDefault();
+    const element = document.getElementById(id);
+    if (element) {
+      const offset = 80; // height of navbar + padding
+      const elementPosition = element.getBoundingClientRect().top + window.scrollY;
+      const offsetPosition = elementPosition - offset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  return (
+    <div className="mb-10 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+      <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+        <span className="text-lhilit-1 dark:text-dhilit-1">📑</span> Table of Contents
+      </h3>
+      <ul className="space-y-3">
+        {headings.map((heading, index) => (
+          <li
+            key={`${heading.id}-${index}`}
+            style={{ paddingLeft: `${(heading.level - 1) * 1}rem` }}
+          >
+            <a
+              href={`#${heading.id}`}
+              onClick={(e) => handleScroll(e, heading.id)}
+              className="text-gray-600 dark:text-gray-400 hover:text-lhilit-1 dark:hover:text-dhilit-1 hover:underline transition-colors"
+            >
+              {heading.text}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
 // Monthly Archive Component for BlogPost
 const BlogPostMonthlyArchive = () => {
   const [archiveData, setArchiveData] = useState({});
@@ -248,6 +353,7 @@ const BlogPost = () => {
   });
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submitStatus, setSubmitStatus] = React.useState('');
+  const [headings, setHeadings] = React.useState([]);
 
   // Load post data
   useEffect(() => {
@@ -256,8 +362,14 @@ const BlogPost = () => {
         const postData = await getSupabasePostBySlug(slug);
         setPost(postData);
 
-        // Track view when post loads
         if (postData) {
+          // Extract headings for TOC
+          if (postData.content) {
+            const extracted = extractHeadings(postData.content);
+            setHeadings(extracted);
+          }
+
+          // Track view when post loads
           await trackView(postData.id, postData.slug);
           loadLikes(postData.id);
         }
@@ -704,193 +816,219 @@ const BlogPost = () => {
               </motion.button>
             </motion.div>
 
-            {/* Blog Content */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
-              className="prose prose-lg dark:prose-invert max-w-none prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-strong:text-gray-900 dark:prose-strong:text-gray-100 prose-code:text-lhilit-1 dark:prose-code:text-dhilit-1 prose-code:bg-gray-100 dark:prose-code:bg-gray-800 prose-pre:bg-gray-900 dark:prose-pre:bg-gray-800 prose-a:text-lhilit-1 dark:prose-a:text-dhilit-1 prose-a:no-underline hover:prose-a:underline"
-            >
-              {post.content ? (
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm, remarkFootnotes]}
-                  rehypePlugins={[rehypeHighlight, rehypeNormalizeFootnotes]}
-                  skipHtml={false}
-                  components={{
-                    h1: ({ children }) => <h1 className="text-4xl font-bold mt-12 mb-6 first:mt-0 text-gray-900 dark:text-gray-100">{children}</h1>,
-                    h2: ({ children }) => <h2 className="text-3xl font-bold mt-10 mb-4 text-gray-900 dark:text-gray-100">{children}</h2>,
-                    h3: ({ children }) => <h3 className="text-2xl font-bold mt-8 mb-3 text-gray-900 dark:text-gray-100">{children}</h3>,
-                    h4: ({ children }) => <h4 className="text-xl font-bold mt-6 mb-2 text-gray-900 dark:text-gray-100">{children}</h4>,
-                    h5: ({ children }) => <h5 className="text-lg font-semibold mt-5 mb-2 text-gray-900 dark:text-gray-100">{children}</h5>,
-                    h6: ({ children }) => <h6 className="text-base font-semibold mt-4 mb-2 text-gray-900 dark:text-gray-100">{children}</h6>,
-                    p: ({ children }) => <p className="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">{children}</p>,
-                    blockquote: ({ children }) => (
-                      <blockquote className="border-l-4 border-lhilit-1 dark:border-dhilit-1 pl-4 py-2 my-6 italic text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-r-lg">
-                        {children}
-                      </blockquote>
-                    ),
-                    code: ({ inline, children }) =>
-                      inline ?
-                        <code className="text-lhilit-1 dark:text-dhilit-1 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm font-mono">{children}</code> :
-                        <code className="text-gray-100">{children}</code>,
-                    pre: ({ children }) => <pre className="bg-gray-900 dark:bg-gray-800 text-gray-100 p-4 rounded-lg overflow-x-auto my-6 border border-gray-200 dark:border-gray-700">{children}</pre>,
-                    ul: ({ children }) => <ul className="mb-4 space-y-2 pl-6 list-disc">{children}</ul>,
-                    strong: ({ children }) => <strong className="text-gray-900 dark:text-gray-100 font-semibold">{children}</strong>,
-                    em: ({ children }) => <em className="italic text-gray-800 dark:text-gray-200">{children}</em>,
-                    del: ({ children }) => <del className="line-through text-gray-500 dark:text-gray-400">{children}</del>,
-                    hr: () => <hr className="my-8 border-gray-300 dark:border-gray-600" />,
-                    br: () => <br />,
-                    table: ({ children }) => (
-                      <div className="overflow-x-auto my-6 rounded-lg border border-gray-300 dark:border-gray-600">
-                        <table className="w-full border-collapse bg-white dark:bg-gray-800">
-                          {children}
-                        </table>
-                      </div>
-                    ),
-                    thead: ({ children }) => (
-                      <thead className="bg-gray-100 dark:bg-gray-700 border-b-2 border-gray-300 dark:border-gray-600">
-                        {children}
-                      </thead>
-                    ),
-                    tbody: ({ children }) => (
-                      <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
-                        {children}
-                      </tbody>
-                    ),
-                    tr: ({ children }) => (
-                      <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                        {children}
-                      </tr>
-                    ),
-                    th: ({ children }) => (
-                      <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-gray-100 text-sm">
-                        {children}
-                      </th>
-                    ),
-                    td: ({ children }) => (
-                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300 text-sm border-r border-gray-200 dark:border-gray-600 last:border-r-0">
-                        {children}
-                      </td>
-                    ),
-                    img: ({ src, alt, ...props }) => (
-                      <img
-                        src={src}
-                        alt={alt || 'Blog image'}
-                        loading="lazy"
-                        decoding="async"
-                        className="max-w-full h-auto rounded-lg my-6 shadow-md hover:shadow-lg transition-shadow"
-                        onError={(e) => {
-                          console.error('Image failed to load:', src);
-                          e.target.style.display = 'none';
-                        }}
-                        {...props}
-                      />
-                    ),
-                    html: ({ value }) => {
-                      // Handle raw HTML like <img> tags
-                      if (value.includes('<img')) {
-                        // Extract src and alt from HTML img tag
-                        const srcMatch = value.match(/src=["']([^"']+)["']/);
-                        const altMatch = value.match(/alt=["']([^"']+)["']/);
-                        const src = srcMatch?.[1];
-                        const alt = altMatch?.[1] || 'Blog image';
+            {/* Blog Content with TOC */}
+            <div className="relative">
+              {/* Excerpt */}
+              {post.excerpt && (
+                <div className="mb-8 text-xl text-gray-600 dark:text-gray-300 italic font-medium leading-relaxed border-l-4 border-lhilit-1 dark:border-dhilit-1 pl-6">
+                  {post.excerpt}
+                </div>
+              )}
 
-                        if (src) {
+              {/* Table of Contents - Now at the top */}
+              <div className="animate-in fade-in slide-in-from-bottom duration-700 delay-300">
+                <TableOfContents headings={headings} />
+              </div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.5 }}
+                className="prose prose-lg dark:prose-invert max-w-none prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-headings:scroll-mt-24 prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-strong:text-gray-900 dark:prose-strong:text-gray-100 prose-code:text-lhilit-1 dark:prose-code:text-dhilit-1 prose-code:bg-gray-100 dark:prose-code:bg-gray-800 prose-pre:bg-gray-900 dark:prose-pre:bg-gray-800 prose-a:text-lhilit-1 dark:prose-a:text-dhilit-1 prose-a:no-underline hover:prose-a:underline overflow-hidden min-w-0"
+              >
+                {post.content ? (
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm, remarkFootnotes]}
+                    rehypePlugins={[rehypeHighlight, rehypeNormalizeFootnotes]}
+                    skipHtml={false}
+                    components={{
+                      h1: ({ children }) => {
+                        const text = flattenText(children);
+                        const id = slugify(text);
+                        return <h1 id={id} className="text-4xl font-bold mt-12 mb-6 first:mt-0 text-gray-900 dark:text-gray-100 group relative scroll-mt-24">{children}</h1>;
+                      },
+                      h2: ({ children }) => {
+                        const text = flattenText(children);
+                        const id = slugify(text);
+                        return <h2 id={id} className="text-3xl font-bold mt-10 mb-4 text-gray-900 dark:text-gray-100 group relative scroll-mt-24">{children}</h2>;
+                      },
+                      h3: ({ children }) => {
+                        const text = flattenText(children);
+                        const id = slugify(text);
+                        return <h3 id={id} className="text-2xl font-bold mt-8 mb-3 text-gray-900 dark:text-gray-100 group relative scroll-mt-24">{children}</h3>;
+                      },
+                      h4: ({ children }) => <h4 className="text-xl font-bold mt-6 mb-2 text-gray-900 dark:text-gray-100">{children}</h4>,
+                      h5: ({ children }) => <h5 className="text-lg font-semibold mt-5 mb-2 text-gray-900 dark:text-gray-100">{children}</h5>,
+                      h6: ({ children }) => <h6 className="text-base font-semibold mt-4 mb-2 text-gray-900 dark:text-gray-100">{children}</h6>,
+                      p: ({ children }) => <p className="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">{children}</p>,
+                      blockquote: ({ children }) => (
+                        <blockquote className="border-l-4 border-lhilit-1 dark:border-dhilit-1 pl-4 py-2 my-6 italic text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-r-lg">
+                          {children}
+                        </blockquote>
+                      ),
+                      code: ({ inline, children }) =>
+                        inline ?
+                          <code className="text-lhilit-1 dark:text-dhilit-1 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm font-mono">{children}</code> :
+                          <code className="text-gray-100">{children}</code>,
+                      pre: ({ children }) => <pre className="bg-gray-900 dark:bg-gray-800 text-gray-100 p-4 rounded-lg overflow-x-auto my-6 border border-gray-200 dark:border-gray-700">{children}</pre>,
+                      ul: ({ children }) => <ul className="mb-4 space-y-2 pl-6 list-disc">{children}</ul>,
+                      strong: ({ children }) => <strong className="text-gray-900 dark:text-gray-100 font-semibold">{children}</strong>,
+                      em: ({ children }) => <em className="italic text-gray-800 dark:text-gray-200">{children}</em>,
+                      del: ({ children }) => <del className="line-through text-gray-500 dark:text-gray-400">{children}</del>,
+                      hr: () => <hr className="my-8 border-gray-300 dark:border-gray-600" />,
+                      br: () => <br />,
+                      table: ({ children }) => (
+                        <div className="overflow-x-auto my-6 rounded-lg border border-gray-300 dark:border-gray-600">
+                          <table className="w-full border-collapse bg-white dark:bg-gray-800">
+                            {children}
+                          </table>
+                        </div>
+                      ),
+                      thead: ({ children }) => (
+                        <thead className="bg-gray-100 dark:bg-gray-700 border-b-2 border-gray-300 dark:border-gray-600">
+                          {children}
+                        </thead>
+                      ),
+                      tbody: ({ children }) => (
+                        <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
+                          {children}
+                        </tbody>
+                      ),
+                      tr: ({ children }) => (
+                        <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                          {children}
+                        </tr>
+                      ),
+                      th: ({ children }) => (
+                        <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-gray-100 text-sm">
+                          {children}
+                        </th>
+                      ),
+                      td: ({ children }) => (
+                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300 text-sm border-r border-gray-200 dark:border-gray-600 last:border-r-0">
+                          {children}
+                        </td>
+                      ),
+                      img: ({ src, alt, ...props }) => (
+                        <img
+                          src={src}
+                          alt={alt || 'Blog image'}
+                          loading="lazy"
+                          decoding="async"
+                          className="max-w-full h-auto rounded-lg my-6 shadow-md hover:shadow-lg transition-shadow"
+                          onError={(e) => {
+                            console.error('Image failed to load:', src);
+                            e.target.style.display = 'none';
+                          }}
+                          {...props}
+                        />
+                      ),
+                      html: ({ value }) => {
+                        // Handle raw HTML like <img> tags
+                        if (value.includes('<img')) {
+                          // Extract src and alt from HTML img tag
+                          const srcMatch = value.match(/src=["']([^"']+)["']/);
+                          const altMatch = value.match(/alt=["']([^"']+)["']/);
+                          const src = srcMatch?.[1];
+                          const alt = altMatch?.[1] || 'Blog image';
+
+                          if (src) {
+                            return (
+                              <img
+                                src={src}
+                                alt={alt}
+                                loading="lazy"
+                                decoding="async"
+                                className="max-w-full h-auto rounded-lg my-6 shadow-md hover:shadow-lg transition-shadow"
+                                onError={(e) => {
+                                  console.error('Image failed to load:', src);
+                                  e.target.style.display = 'none';
+                                }}
+                              />
+                            );
+                          }
+                        }
+                        // For other HTML, render as-is (sanitized by ReactMarkdown)
+                        return <div dangerouslySetInnerHTML={{ __html: value }} className="my-4" />;
+                      },
+                      sup: ({ children }) => <sup className="text-lhilit-1 dark:text-dhilit-1 font-medium">{children}</sup>,
+                      a: ({ href, children, ...props }) => {
+                        // Check if it's an internal footnote link
+                        if (href?.startsWith('#')) {
                           return (
-                            <img
-                              src={src}
-                              alt={alt}
-                              loading="lazy"
-                              decoding="async"
-                              className="max-w-full h-auto rounded-lg my-6 shadow-md hover:shadow-lg transition-shadow"
-                              onError={(e) => {
-                                console.error('Image failed to load:', src);
-                                e.target.style.display = 'none';
-                              }}
-                            />
+                            <a
+                              href={href}
+                              className="text-lhilit-1 dark:text-dhilit-1 hover:underline font-medium"
+                              {...props}
+                            >
+                              {children}
+                            </a>
                           );
                         }
-                      }
-                      // For other HTML, render as-is (sanitized by ReactMarkdown)
-                      return <div dangerouslySetInnerHTML={{ __html: value }} className="my-4" />;
-                    },
-                    sup: ({ children }) => <sup className="text-lhilit-1 dark:text-dhilit-1 font-medium">{children}</sup>,
-                    a: ({ href, children, ...props }) => {
-                      // Check if it's an internal footnote link
-                      if (href?.startsWith('#')) {
+                        // External links
                         return (
                           <a
                             href={href}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="text-lhilit-1 dark:text-dhilit-1 hover:underline font-medium"
                             {...props}
                           >
                             {children}
                           </a>
                         );
-                      }
-                      // External links
-                      return (
-                        <a
-                          href={href}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-lhilit-1 dark:text-dhilit-1 hover:underline font-medium"
-                          {...props}
-                        >
-                          {children}
-                        </a>
-                      );
-                    },
-                    // Footnotes section styling
-                    section: ({ children, ...props }) => {
-                      if (props.className?.includes('footnotes')) {
-                        return (
-                          <section {...props} className="mt-12 pt-6 border-t-2 border-gray-300 dark:border-gray-600">
-                            <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                      },
+                      // Footnotes section styling
+                      section: ({ children, ...props }) => {
+                        if (props.className?.includes('footnotes')) {
+                          return (
+                            <section {...props} className="mt-12 pt-6 border-t-2 border-gray-300 dark:border-gray-600">
+                              <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                                {children}
+                              </div>
+                            </section>
+                          );
+                        }
+                        return <section {...props}>{children}</section>;
+                      },
+                      ol: ({ children, ...props }) => {
+                        if (props.className?.includes('footnotes')) {
+                          return (
+                            <ol {...props} className="list-decimal list-inside space-y-2">
                               {children}
-                            </div>
-                          </section>
-                        );
+                            </ol>
+                          );
+                        }
+                        return <ol className="mb-4 space-y-2 pl-6 list-decimal">{children}</ol>;
+                      },
+                      li: ({ children, ...props }) => {
+                        // Check if it's a footnote item
+                        if (props.id?.includes('fn-') || props.className?.includes('footnote-item')) {
+                          return (
+                            <li {...props} className="text-sm text-gray-600 dark:text-gray-400 ml-4 py-1">
+                              {children}
+                            </li>
+                          );
+                        }
+                        return <li className="text-gray-700 dark:text-gray-300">{children}</li>;
                       }
-                      return <section {...props}>{children}</section>;
-                    },
-                    ol: ({ children, ...props }) => {
-                      if (props.className?.includes('footnotes')) {
-                        return (
-                          <ol {...props} className="list-decimal list-inside space-y-2">
-                            {children}
-                          </ol>
-                        );
-                      }
-                      return <ol className="mb-4 space-y-2 pl-6 list-decimal">{children}</ol>;
-                    },
-                    li: ({ children, ...props }) => {
-                      // Check if it's a footnote item
-                      if (props.id?.includes('fn-') || props.className?.includes('footnote-item')) {
-                        return (
-                          <li {...props} className="text-sm text-gray-600 dark:text-gray-400 ml-4 py-1">
-                            {children}
-                          </li>
-                        );
-                      }
-                      return <li className="text-gray-700 dark:text-gray-300">{children}</li>;
-                    }
-                  }}
-                >
-                  {post.content}
-                </ReactMarkdown>
-              ) : (
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 text-center">
-                  <p className="text-yellow-800 dark:text-yellow-200">
-                    <strong>No content available</strong><br />
-                    The blog post content could not be loaded. This may be a temporary issue.
-                  </p>
-                  {process.env.NODE_ENV === 'development' && (
-                    <p className="text-xs text-gray-500 mt-4">Debug: post.content = {post.content ? `${post.content.substring(0, 50)}...` : 'undefined'}</p>
-                  )}
-                </div>
-              )}
-            </motion.div>
+                    }}
+                  >
+                    {post.content}
+                  </ReactMarkdown>
+                ) : (
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 text-center">
+                    <p className="text-yellow-800 dark:text-yellow-200">
+                      <strong>No content available</strong><br />
+                      The blog post content could not be loaded. This may be a temporary issue.
+                    </p>
+                    {process.env.NODE_ENV === 'development' && (
+                      <p className="text-xs text-gray-500 mt-4">Debug: post.content = {post.content ? `${post.content.substring(0, 50)}...` : 'undefined'}</p>
+                    )}
+                  </div>
+                )}
+              </motion.div>
+            </div>
 
             {/* Comments Section */}
             <motion.section

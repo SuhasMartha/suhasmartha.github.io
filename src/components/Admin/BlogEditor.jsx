@@ -28,8 +28,7 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('write');
   const [isPreviewMode, setIsPreviewMode] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+
 
   useEffect(() => {
     if (post) {
@@ -62,7 +61,7 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
+
     if (name === 'title') {
       setFormData(prev => ({
         ...prev,
@@ -95,58 +94,9 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
     }));
   };
 
-  const handleImageUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
 
-    // Validate file is an image
-    if (!file.type.startsWith('image/')) {
-      setError('Please upload an image file');
-      return;
-    }
 
-    if (file.size > 5 * 1024 * 1024) { // 5MB limit
-      setError('Image must be smaller than 5MB');
-      return;
-    }
 
-    setUploadingImage(true);
-    setError('');
-
-    try {
-      // Create unique filename
-      const timestamp = Date.now();
-      const filename = `blog-images/${timestamp}-${file.name.replace(/\s+/g, '-')}`;
-
-      // Upload to Supabase Storage
-      const { data, error: uploadError } = await supabase.storage
-        .from('blog-images')
-        .upload(filename, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('blog-images')
-        .getPublicUrl(data.path);
-
-      // Update form with image URL
-      setFormData(prev => ({
-        ...prev,
-        image: urlData.publicUrl
-      }));
-
-      setUploadProgress(0);
-    } catch (err) {
-      console.error('Image upload error:', err);
-      setError(err.message || 'Failed to upload image');
-    } finally {
-      setUploadingImage(false);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -248,7 +198,7 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
                   )}
                 </div>
               )}
-              
+
               {/* Tags */}
               <div className="flex flex-wrap gap-2 mb-4">
                 {formData.tags.map((tag, index) => (
@@ -260,11 +210,11 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
                   </span>
                 ))}
               </div>
-              
+
               <h1 className="text-4xl font-bold mb-6 bg-gradient-to-r from-lhilit-1 to-lhilit-2 dark:from-dhilit-1 dark:to-dhilit-2 bg-clip-text text-transparent">
                 {formData.title || 'Untitled Post'}
               </h1>
-              
+
               <div className="flex items-center gap-4 text-gray-600 dark:text-gray-400 mb-6">
                 <div className="flex items-center gap-2">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-r from-lhilit-1 to-lhilit-2 dark:from-dhilit-1 dark:to-dhilit-2 flex items-center justify-center text-white font-semibold">
@@ -295,67 +245,67 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
                 rehypePlugins={[rehypeHighlight]}
                 skipHtml={false}
                 components={{
-                  h1: ({children}) => <h1 className="text-4xl font-bold mt-12 mb-6 first:mt-0 text-gray-900 dark:text-gray-100">{children}</h1>,
-                  h2: ({children}) => <h2 className="text-3xl font-bold mt-10 mb-4 text-gray-900 dark:text-gray-100">{children}</h2>,
-                  h3: ({children}) => <h3 className="text-2xl font-bold mt-8 mb-3 text-gray-900 dark:text-gray-100">{children}</h3>,
-                  h4: ({children}) => <h4 className="text-xl font-bold mt-6 mb-2 text-gray-900 dark:text-gray-100">{children}</h4>,
-                  h5: ({children}) => <h5 className="text-lg font-semibold mt-5 mb-2 text-gray-900 dark:text-gray-100">{children}</h5>,
-                  h6: ({children}) => <h6 className="text-base font-semibold mt-4 mb-2 text-gray-900 dark:text-gray-100">{children}</h6>,
-                  p: ({children}) => <p className="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">{children}</p>,
-                  blockquote: ({children}) => (
+                  h1: ({ children }) => <h1 className="text-4xl font-bold mt-12 mb-6 first:mt-0 text-gray-900 dark:text-gray-100">{children}</h1>,
+                  h2: ({ children }) => <h2 className="text-3xl font-bold mt-10 mb-4 text-gray-900 dark:text-gray-100">{children}</h2>,
+                  h3: ({ children }) => <h3 className="text-2xl font-bold mt-8 mb-3 text-gray-900 dark:text-gray-100">{children}</h3>,
+                  h4: ({ children }) => <h4 className="text-xl font-bold mt-6 mb-2 text-gray-900 dark:text-gray-100">{children}</h4>,
+                  h5: ({ children }) => <h5 className="text-lg font-semibold mt-5 mb-2 text-gray-900 dark:text-gray-100">{children}</h5>,
+                  h6: ({ children }) => <h6 className="text-base font-semibold mt-4 mb-2 text-gray-900 dark:text-gray-100">{children}</h6>,
+                  p: ({ children }) => <p className="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">{children}</p>,
+                  blockquote: ({ children }) => (
                     <blockquote className="border-l-4 border-lhilit-1 dark:border-dhilit-1 pl-4 py-2 my-6 italic text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-r-lg">
                       {children}
                     </blockquote>
                   ),
-                  code: ({inline, children}) => 
-                    inline ? 
+                  code: ({ inline, children }) =>
+                    inline ?
                       <code className="text-lhilit-1 dark:text-dhilit-1 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm font-mono">{children}</code> :
                       <code className="text-gray-100">{children}</code>,
-                  pre: ({children}) => <pre className="bg-gray-900 dark:bg-gray-800 text-gray-100 p-4 rounded-lg overflow-x-auto my-6 border border-gray-200 dark:border-gray-700">{children}</pre>,
-                  ul: ({children}) => <ul className="mb-4 space-y-2 pl-6 list-disc">{children}</ul>,
-                  ol: ({children}) => <ol className="mb-4 space-y-2 pl-6 list-decimal">{children}</ol>,
-                  li: ({children}) => <li className="text-gray-700 dark:text-gray-300">{children}</li>,
-                  strong: ({children}) => <strong className="text-gray-900 dark:text-gray-100 font-semibold">{children}</strong>,
-                  em: ({children}) => <em className="italic text-gray-800 dark:text-gray-200">{children}</em>,
-                  del: ({children}) => <del className="line-through text-gray-500 dark:text-gray-400">{children}</del>,
+                  pre: ({ children }) => <pre className="bg-gray-900 dark:bg-gray-800 text-gray-100 p-4 rounded-lg overflow-x-auto my-6 border border-gray-200 dark:border-gray-700">{children}</pre>,
+                  ul: ({ children }) => <ul className="mb-4 space-y-2 pl-6 list-disc">{children}</ul>,
+                  ol: ({ children }) => <ol className="mb-4 space-y-2 pl-6 list-decimal">{children}</ol>,
+                  li: ({ children }) => <li className="text-gray-700 dark:text-gray-300">{children}</li>,
+                  strong: ({ children }) => <strong className="text-gray-900 dark:text-gray-100 font-semibold">{children}</strong>,
+                  em: ({ children }) => <em className="italic text-gray-800 dark:text-gray-200">{children}</em>,
+                  del: ({ children }) => <del className="line-through text-gray-500 dark:text-gray-400">{children}</del>,
                   hr: () => <hr className="my-8 border-gray-300 dark:border-gray-600" />,
                   br: () => <br />,
-                  table: ({children}) => (
+                  table: ({ children }) => (
                     <div className="overflow-x-auto my-6 rounded-lg border border-gray-300 dark:border-gray-600">
                       <table className="w-full border-collapse bg-white dark:bg-gray-800">
                         {children}
                       </table>
                     </div>
                   ),
-                  thead: ({children}) => (
+                  thead: ({ children }) => (
                     <thead className="bg-gray-100 dark:bg-gray-700 border-b-2 border-gray-300 dark:border-gray-600">
                       {children}
                     </thead>
                   ),
-                  tbody: ({children}) => (
+                  tbody: ({ children }) => (
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
                       {children}
                     </tbody>
                   ),
-                  tr: ({children}) => (
+                  tr: ({ children }) => (
                     <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                       {children}
                     </tr>
                   ),
-                  th: ({children}) => (
+                  th: ({ children }) => (
                     <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-gray-100 text-sm">
                       {children}
                     </th>
                   ),
-                  td: ({children}) => (
+                  td: ({ children }) => (
                     <td className="px-4 py-3 text-gray-700 dark:text-gray-300 text-sm border-r border-gray-200 dark:border-gray-600 last:border-r-0">
                       {children}
                     </td>
                   ),
-                  img: ({src, alt, ...props}) => (
-                    <img 
-                      src={src} 
-                      alt={alt || 'Blog image'} 
+                  img: ({ src, alt, ...props }) => (
+                    <img
+                      src={src}
+                      alt={alt || 'Blog image'}
                       loading="lazy"
                       decoding="async"
                       className="max-w-full h-auto rounded-lg my-6 shadow-md hover:shadow-lg transition-shadow"
@@ -366,18 +316,18 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
                       {...props}
                     />
                   ),
-                  html: ({value}) => {
+                  html: ({ value }) => {
                     if (value.includes('<img')) {
                       const srcMatch = value.match(/src=["']([^"']+)["']/);
                       const altMatch = value.match(/alt=["']([^"']+)["']/);
                       const src = srcMatch?.[1];
                       const alt = altMatch?.[1] || 'Blog image';
-                      
+
                       if (src) {
                         return (
-                          <img 
-                            src={src} 
-                            alt={alt} 
+                          <img
+                            src={src}
+                            alt={alt}
                             loading="lazy"
                             decoding="async"
                             className="max-w-full h-auto rounded-lg my-6 shadow-md hover:shadow-lg transition-shadow"
@@ -389,13 +339,13 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
                         );
                       }
                     }
-                    return <div dangerouslySetInnerHTML={{__html: value}} className="my-4" />;
+                    return <div dangerouslySetInnerHTML={{ __html: value }} className="my-4" />;
                   },
-                  sup: ({children}) => <sup className="text-lhilit-1 dark:text-dhilit-1 font-medium">{children}</sup>,
-                  a: ({href, children, ...props}) => {
+                  sup: ({ children }) => <sup className="text-lhilit-1 dark:text-dhilit-1 font-medium">{children}</sup>,
+                  a: ({ href, children, ...props }) => {
                     if (href?.startsWith('#')) {
                       return (
-                        <a 
+                        <a
                           href={href}
                           className="text-lhilit-1 dark:text-dhilit-1 hover:underline font-medium"
                           {...props}
@@ -405,10 +355,10 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
                       );
                     }
                     return (
-                      <a 
-                        href={href} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="text-lhilit-1 dark:text-dhilit-1 hover:underline font-medium"
                         {...props}
                       >
@@ -416,7 +366,7 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
                       </a>
                     );
                   },
-                  section: ({children, ...props}) => {
+                  section: ({ children, ...props }) => {
                     if (props.className?.includes('footnotes')) {
                       return (
                         <section {...props} className="mt-12 pt-6 border-t-2 border-gray-300 dark:border-gray-600">
@@ -455,7 +405,7 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
                 placeholder="Enter post title"
               />
             </div>
-            
+
             <div>
               <label htmlFor="slug" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Slug *
@@ -499,28 +449,26 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
                 <button
                   type="button"
                   onClick={() => setActiveTab('write')}
-                  className={`px-3 py-1 text-sm font-medium rounded-md transition-all duration-200 ${
-                    activeTab === 'write'
-                      ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-                  }`}
+                  className={`px-3 py-1 text-sm font-medium rounded-md transition-all duration-200 ${activeTab === 'write'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                    }`}
                 >
                   Write
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab('preview')}
-                  className={`px-3 py-1 text-sm font-medium rounded-md transition-all duration-200 ${
-                    activeTab === 'preview'
-                      ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-                  }`}
+                  className={`px-3 py-1 text-sm font-medium rounded-md transition-all duration-200 ${activeTab === 'preview'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                    }`}
                 >
                   Preview
                 </button>
               </div>
             </div>
-            
+
             {activeTab === 'write' ? (
               <textarea
                 id="content"
@@ -539,67 +487,67 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
                   rehypePlugins={[rehypeHighlight]}
                   skipHtml={false}
                   components={{
-                    h1: ({children}) => <h1 className="text-4xl font-bold mt-12 mb-6 first:mt-0 text-gray-900 dark:text-gray-100">{children}</h1>,
-                    h2: ({children}) => <h2 className="text-3xl font-bold mt-10 mb-4 text-gray-900 dark:text-gray-100">{children}</h2>,
-                    h3: ({children}) => <h3 className="text-2xl font-bold mt-8 mb-3 text-gray-900 dark:text-gray-100">{children}</h3>,
-                    h4: ({children}) => <h4 className="text-xl font-bold mt-6 mb-2 text-gray-900 dark:text-gray-100">{children}</h4>,
-                    h5: ({children}) => <h5 className="text-lg font-semibold mt-5 mb-2 text-gray-900 dark:text-gray-100">{children}</h5>,
-                    h6: ({children}) => <h6 className="text-base font-semibold mt-4 mb-2 text-gray-900 dark:text-gray-100">{children}</h6>,
-                    p: ({children}) => <p className="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">{children}</p>,
-                    blockquote: ({children}) => (
+                    h1: ({ children }) => <h1 className="text-4xl font-bold mt-12 mb-6 first:mt-0 text-gray-900 dark:text-gray-100">{children}</h1>,
+                    h2: ({ children }) => <h2 className="text-3xl font-bold mt-10 mb-4 text-gray-900 dark:text-gray-100">{children}</h2>,
+                    h3: ({ children }) => <h3 className="text-2xl font-bold mt-8 mb-3 text-gray-900 dark:text-gray-100">{children}</h3>,
+                    h4: ({ children }) => <h4 className="text-xl font-bold mt-6 mb-2 text-gray-900 dark:text-gray-100">{children}</h4>,
+                    h5: ({ children }) => <h5 className="text-lg font-semibold mt-5 mb-2 text-gray-900 dark:text-gray-100">{children}</h5>,
+                    h6: ({ children }) => <h6 className="text-base font-semibold mt-4 mb-2 text-gray-900 dark:text-gray-100">{children}</h6>,
+                    p: ({ children }) => <p className="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">{children}</p>,
+                    blockquote: ({ children }) => (
                       <blockquote className="border-l-4 border-lhilit-1 dark:border-dhilit-1 pl-4 py-2 my-6 italic text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-r-lg">
                         {children}
                       </blockquote>
                     ),
-                    code: ({inline, children}) => 
-                      inline ? 
+                    code: ({ inline, children }) =>
+                      inline ?
                         <code className="text-lhilit-1 dark:text-dhilit-1 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm font-mono">{children}</code> :
                         <code className="text-gray-100">{children}</code>,
-                    pre: ({children}) => <pre className="bg-gray-900 dark:bg-gray-800 text-gray-100 p-4 rounded-lg overflow-x-auto my-6 border border-gray-200 dark:border-gray-700">{children}</pre>,
-                    ul: ({children}) => <ul className="mb-4 space-y-2 pl-6 list-disc">{children}</ul>,
-                    ol: ({children}) => <ol className="mb-4 space-y-2 pl-6 list-decimal">{children}</ol>,
-                    li: ({children}) => <li className="text-gray-700 dark:text-gray-300">{children}</li>,
-                    strong: ({children}) => <strong className="text-gray-900 dark:text-gray-100 font-semibold">{children}</strong>,
-                    em: ({children}) => <em className="italic text-gray-800 dark:text-gray-200">{children}</em>,
-                    del: ({children}) => <del className="line-through text-gray-500 dark:text-gray-400">{children}</del>,
+                    pre: ({ children }) => <pre className="bg-gray-900 dark:bg-gray-800 text-gray-100 p-4 rounded-lg overflow-x-auto my-6 border border-gray-200 dark:border-gray-700">{children}</pre>,
+                    ul: ({ children }) => <ul className="mb-4 space-y-2 pl-6 list-disc">{children}</ul>,
+                    ol: ({ children }) => <ol className="mb-4 space-y-2 pl-6 list-decimal">{children}</ol>,
+                    li: ({ children }) => <li className="text-gray-700 dark:text-gray-300">{children}</li>,
+                    strong: ({ children }) => <strong className="text-gray-900 dark:text-gray-100 font-semibold">{children}</strong>,
+                    em: ({ children }) => <em className="italic text-gray-800 dark:text-gray-200">{children}</em>,
+                    del: ({ children }) => <del className="line-through text-gray-500 dark:text-gray-400">{children}</del>,
                     hr: () => <hr className="my-8 border-gray-300 dark:border-gray-600" />,
                     br: () => <br />,
-                    table: ({children}) => (
+                    table: ({ children }) => (
                       <div className="overflow-x-auto my-6 rounded-lg border border-gray-300 dark:border-gray-600">
                         <table className="w-full border-collapse bg-white dark:bg-gray-800">
                           {children}
                         </table>
                       </div>
                     ),
-                    thead: ({children}) => (
+                    thead: ({ children }) => (
                       <thead className="bg-gray-100 dark:bg-gray-700 border-b-2 border-gray-300 dark:border-gray-600">
                         {children}
                       </thead>
                     ),
-                    tbody: ({children}) => (
+                    tbody: ({ children }) => (
                       <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
                         {children}
                       </tbody>
                     ),
-                    tr: ({children}) => (
+                    tr: ({ children }) => (
                       <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                         {children}
                       </tr>
                     ),
-                    th: ({children}) => (
+                    th: ({ children }) => (
                       <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-gray-100 text-sm">
                         {children}
                       </th>
                     ),
-                    td: ({children}) => (
+                    td: ({ children }) => (
                       <td className="px-4 py-3 text-gray-700 dark:text-gray-300 text-sm border-r border-gray-200 dark:border-gray-600 last:border-r-0">
                         {children}
                       </td>
                     ),
-                    img: ({src, alt, ...props}) => (
-                      <img 
-                        src={src} 
-                        alt={alt || 'Blog image'} 
+                    img: ({ src, alt, ...props }) => (
+                      <img
+                        src={src}
+                        alt={alt || 'Blog image'}
                         loading="lazy"
                         decoding="async"
                         className="max-w-full h-auto rounded-lg my-6 shadow-md hover:shadow-lg transition-shadow"
@@ -610,18 +558,18 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
                         {...props}
                       />
                     ),
-                    html: ({value}) => {
+                    html: ({ value }) => {
                       if (value.includes('<img')) {
                         const srcMatch = value.match(/src=["']([^"']+)["']/);
                         const altMatch = value.match(/alt=["']([^"']+)["']/);
                         const src = srcMatch?.[1];
                         const alt = altMatch?.[1] || 'Blog image';
-                        
+
                         if (src) {
                           return (
-                            <img 
-                              src={src} 
-                              alt={alt} 
+                            <img
+                              src={src}
+                              alt={alt}
                               loading="lazy"
                               decoding="async"
                               className="max-w-full h-auto rounded-lg my-6 shadow-md hover:shadow-lg transition-shadow"
@@ -633,13 +581,13 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
                           );
                         }
                       }
-                      return <div dangerouslySetInnerHTML={{__html: value}} className="my-4" />;
+                      return <div dangerouslySetInnerHTML={{ __html: value }} className="my-4" />;
                     },
-                    sup: ({children}) => <sup className="text-lhilit-1 dark:text-dhilit-1 font-medium">{children}</sup>,
-                    a: ({href, children, ...props}) => {
+                    sup: ({ children }) => <sup className="text-lhilit-1 dark:text-dhilit-1 font-medium">{children}</sup>,
+                    a: ({ href, children, ...props }) => {
                       if (href?.startsWith('#')) {
                         return (
-                          <a 
+                          <a
                             href={href}
                             className="text-lhilit-1 dark:text-dhilit-1 hover:underline font-medium"
                             {...props}
@@ -649,10 +597,10 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
                         );
                       }
                       return (
-                        <a 
-                          href={href} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="text-lhilit-1 dark:text-dhilit-1 hover:underline font-medium"
                           {...props}
                         >
@@ -660,7 +608,7 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
                         </a>
                       );
                     },
-                    section: ({children, ...props}) => {
+                    section: ({ children, ...props }) => {
                       if (props.className?.includes('footnotes')) {
                         return (
                           <section {...props} className="mt-12 pt-6 border-t-2 border-gray-300 dark:border-gray-600">
@@ -704,7 +652,7 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
                 Add
               </motion.button>
             </div>
-            
+
             {formData.tags.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {formData.tags.map((tag, index) => (
@@ -745,7 +693,7 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
                 className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-lhilit-1 dark:focus:ring-dhilit-1 focus:border-transparent transition-all duration-300"
               />
             </div>
-            
+
             <div>
               <label htmlFor="author_profession" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Author Profession
@@ -760,7 +708,7 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
                 placeholder="Full Stack Developer"
               />
             </div>
-            
+
             <div>
               <label htmlFor="read_time" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Read Time
@@ -775,7 +723,7 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
                 placeholder="5 min read"
               />
             </div>
-            
+
             <div>
               <label htmlFor="publish_date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Publish Date
@@ -796,43 +744,11 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
             <label htmlFor="image" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Featured Image
             </label>
-            
+
             {/* Upload or URL Option */}
             <div className="space-y-3">
               {/* Upload Button */}
-              <div className="flex items-center gap-3">
-                <label className="flex-1 relative cursor-pointer">
-                  <div className="px-4 py-3 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-lhilit-1 dark:hover:border-dhilit-1 transition-colors text-center">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      disabled={uploadingImage}
-                      className="hidden"
-                    />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {uploadingImage ? 'Uploading...' : '📁 Click to upload image'}
-                    </span>
-                  </div>
-                </label>
-              </div>
 
-              {/* Progress bar */}
-              {uploadingImage && (
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div
-                    className="bg-lhilit-1 dark:bg-dhilit-1 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${uploadProgress}%` }}
-                  ></div>
-                </div>
-              )}
-
-              {/* Divider */}
-              <div className="relative flex items-center">
-                <div className="flex-1 border-t border-gray-300 dark:border-gray-600"></div>
-                <span className="px-3 text-xs text-gray-500 dark:text-gray-400">OR</span>
-                <div className="flex-1 border-t border-gray-300 dark:border-gray-600"></div>
-              </div>
 
               {/* URL Input */}
               <input
@@ -873,7 +789,7 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
                 Featured Post
               </span>
             </label>
-            
+
             <label className="flex items-center">
               <input
                 type="checkbox"
@@ -886,7 +802,7 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
                 Enable Comments
               </span>
             </label>
-            
+
             <label className="flex items-center">
               <input
                 type="checkbox"
@@ -930,7 +846,7 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
             >
               Cancel
             </motion.button>
-            
+
             <motion.button
               whileHover={{ scale: loading ? 1 : 1.02 }}
               whileTap={{ scale: loading ? 1 : 0.98 }}
