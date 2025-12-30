@@ -10,7 +10,7 @@ const UnderProgress = () => {
       <div className="fixed inset-0 z-[-2] bg-white bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))] dark:bg-neutral-950 dark:bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]"></div>
       <div className="relative z-0"></div>
       <Navbar />
-      
+
       <div className="flex min-h-screen items-center justify-center pt-25">
         <div className="mycontainer text-center">
           <motion.div
@@ -21,11 +21,11 @@ const UnderProgress = () => {
           >
             {/* Animated Construction Icon */}
             <motion.div
-              animate={{ 
+              animate={{
                 rotate: [0, 10, -10, 0],
                 scale: [1, 1.1, 1]
               }}
-              transition={{ 
+              transition={{
                 duration: 2,
                 repeat: Infinity,
                 ease: "easeInOut"
@@ -33,9 +33,9 @@ const UnderProgress = () => {
               className="mb-8"
             >
               <div className="mx-auto w-32 h-32 bg-gradient-to-br from-lhilit-1 to-lhilit-2 dark:from-dhilit-1 dark:to-dhilit-2 rounded-full flex items-center justify-center shadow-2xl">
-                <svg 
-                  className="w-16 h-16 text-white" 
-                  fill="currentColor" 
+                <svg
+                  className="w-16 h-16 text-white"
+                  fill="currentColor"
                   viewBox="0 0 20 20"
                 >
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -60,9 +60,29 @@ const UnderProgress = () => {
               transition={{ duration: 0.6, delay: 0.4 }}
               className="text-lg text-gray-600 dark:text-gray-400 mb-8 leading-relaxed"
             >
-              This page is currently being crafted with care. I'm working hard to bring you something amazing. 
+              This page is currently being crafted with care. I'm working hard to bring you something amazing.
               Please check back soon for updates!
             </motion.p>
+
+            {/* Fun Zone Recommendation */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.5 }}
+              className="mb-8 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/10 dark:to-pink-900/10 rounded-xl border border-purple-100 dark:border-purple-800"
+            >
+              <h3 className="font-semibold text-purple-900 dark:text-purple-100 mb-2">Build taking too long?</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Why not play some games while you wait?</p>
+              <Link
+                to="/games"
+                className="inline-flex items-center gap-2 text-sm font-medium text-purple-600 dark:text-purple-300 hover:text-purple-800 dark:hover:text-purple-100 transition-colors"
+              >
+                <span>🎮 Visit Fun Zone</span>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
+              </Link>
+            </motion.div>
 
             {/* Progress Bar */}
             <motion.div

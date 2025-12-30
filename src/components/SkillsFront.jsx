@@ -8,76 +8,56 @@ import react from "./Images/reactlogo.svg";
 import aws from "./Images/aws.png";
 import { motion } from "framer-motion";
 
-const SkillsFront = ({ container, container2 }) => {
-  // Accept both duration and delay for staggered animation
-  const skillanime = (duration, delay) => ({
-    initial: { y: -10 },
-    animate: {
-      y: [10, -10],
-      transition: {
-        duration: duration,
-        delay: delay,
-        ease: "linear",
-        repeat: Infinity,
-        repeatType: "reverse",
-      },
-    },
-  });
-
+const SkillsFront = () => {
+  // Duplicate logos to create seamless loop
   const logos = [
-    {
-      tool: "Python",
-      image: python,
-    },
-    {
-      tool: "SQL",
-      image: sql,
-    },
-    {
-      tool: "React",
-      image: react,
-    },
-    {
-      tool: "AWS",
-      image: aws,
-    },
-    {
-      tool: "Tensor Flow",
-      image: tensor,
-    },
-    {
-      tool: "Power BI",
-      image: bi,
-    },
+    { tool: "Python", image: python },
+    { tool: "SQL", image: sql },
+    { tool: "React", image: react },
+    { tool: "AWS", image: aws },
+    { tool: "Tensor Flow", image: tensor },
+    { tool: "Power BI", image: bi },
+    // Duplicate for loop
+    { tool: "Python", image: python },
+    { tool: "SQL", image: sql },
+    { tool: "React", image: react },
+    { tool: "AWS", image: aws },
+    { tool: "Tensor Flow", image: tensor },
+    { tool: "Power BI", image: bi },
+    // and one more set for smoother bigger screens if needed
+    { tool: "Python", image: python },
+    { tool: "SQL", image: sql },
+    { tool: "React", image: react },
+    { tool: "AWS", image: aws },
+    { tool: "Tensor Flow", image: tensor },
+    { tool: "Power BI", image: bi },
   ];
 
   return (
-    <>
+    <div className="w-full overflow-hidden py-10 relative">
       <motion.div
-        whileInView={{ opacity: 1, x: 0 }}
-        initial={{ opacity: 0, x: -150 }}
-        transition={{ duration: 1 }}
-        className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6"
+        className="flex w-max gap-12"
+        animate={{ x: ["-33.33%", "0%"] }} // Move Right
+        transition={{
+          duration: 20, // Adjust speed here
+          ease: "linear",
+          repeat: Infinity,
+        }}
       >
         {logos.map((logo, index) => (
-          <motion.section
+          <div
             key={index}
-            variants={skillanime(2 + index * 0.7)}
-            initial="initial"
-            animate="animate"
-            className="skillLogo"
+            className="flex-shrink-0 w-24 h-24 sm:w-32 sm:h-32 flex items-center justify-center grayscale hover:grayscale-0 transition-all duration-300 opacity-70 hover:opacity-100 hover:scale-110 cursor-pointer"
           >
-            <div className="group relative">
-              <img
-                src={logo.image}
-                alt={logo.tool}
-                className="hover:bg-primary-3 rounded-md"
-              />
-            </div>
-          </motion.section>
+            <img
+              src={logo.image}
+              alt={logo.tool}
+              className="w-full h-full object-contain p-2"
+            />
+          </div>
         ))}
       </motion.div>
-    </>
+    </div>
   );
 };
 

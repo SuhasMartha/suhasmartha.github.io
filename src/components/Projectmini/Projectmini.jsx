@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import ProjectCard from "./ProjectCard";
-import { fullstack, frontend } from "./ProjectData";
 import vote from "../Images/projectPics/vote.png";
 import port from "../Images/projectPics/port.png";
 import ats from "../Images/projectPics/ats.png";
@@ -34,7 +33,7 @@ const useHoverCapability = () => {
   return hasHoverCapability;
 };
 
-const Projectmini = ({ title }) => {
+const Projectmini = ({ title, projects }) => {
   const PROJECTS = [
     {
       id: "002",
@@ -69,12 +68,7 @@ const Projectmini = ({ title }) => {
   const animationFrameRef = useRef(null);
   const targetPosition = useRef({ x: 0, y: 0 });
 
-  const projectsToDisplay =
-    title === "fullstack"
-      ? fullstack
-      : title === "frontend"
-        ? frontend
-        : PROJECTS;
+  const projectsToDisplay = projects || PROJECTS;
 
   const handleMouseMove = useCallback(
     (e) => {

@@ -58,7 +58,7 @@ const Admin = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       if (!user) return;
-      
+
       setPostsLoading(true);
       try {
         const { data, error } = await supabase
@@ -90,7 +90,7 @@ const Admin = () => {
 
   const handleDeletePost = async (postId) => {
     if (!confirm('Are you sure you want to delete this post?')) return;
-    
+
     try {
       const { error } = await supabase
         .from('blog_posts')
@@ -104,7 +104,7 @@ const Admin = () => {
         .from('blog_posts')
         .select('*')
         .order('created_at', { ascending: false });
-      
+
       setPosts(data || []);
     } catch (error) {
       console.error('Error deleting post:', error);
@@ -123,7 +123,7 @@ const Admin = () => {
       .from('blog_posts')
       .select('*')
       .order('created_at', { ascending: false });
-    
+
     setPosts(data || []);
     setCurrentView('dashboard');
     setEditingPost(null);
@@ -136,7 +136,7 @@ const Admin = () => {
 
   useEffect(() => {
     document.title = "Admin Dashboard - Suhas Martha";
-    
+
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) {
       metaDescription.setAttribute("content", "Admin dashboard for managing blog posts and content.");
@@ -161,46 +161,47 @@ const Admin = () => {
   return (
     <>
       <div className="fixed inset-0 z-[-2] bg-white bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))] dark:bg-neutral-950 dark:bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]"></div>
-      
-      <Navbar />
-      
-      <div className="min-h-screen pt-20">
-        <div className="mycontainer">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            {!user ? (
-              <AdminLogin />
-            ) : (
-              <>
-                {currentView === 'dashboard' ? (
-                  <AdminDashboard 
-                    user={user} 
-                    posts={posts} 
-                    postsLoading={postsLoading}
-                    onEdit={handleEditPost}
-                    onDelete={handleDeletePost}
-                    onCreatePost={handleCreatePost}
-                  />
-                ) : (
-                  <BlogEditor
-                    post={editingPost}
-                    onSave={handleSavePost}
-                    onCancel={handleCancelEdit}
-                  />
-                )}
-              </>
-            )}
-          </motion.div>
-          
-          <hr className="mt-16" />
-          <div className="py-8"></div>
-          <Footer />
-          <div className="pb-12"></div>
+
+      {!user ? (
+        <>
+          <Navbar />
+          <div className="min-h-screen pt-20">
+            <div className="mycontainer">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+              >
+                <AdminLogin />
+              </motion.div>
+
+              <hr className="mt-16" />
+              <div className="py-8"></div>
+              <Footer />
+              <div className="pb-12"></div>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 w-full">
+          {currentView === 'dashboard' ? (
+            <AdminDashboard
+              user={user}
+              posts={posts}
+              postsLoading={postsLoading}
+              onEdit={handleEditPost}
+              onDelete={handleDeletePost}
+              onCreatePost={handleCreatePost}
+            />
+          ) : (
+            <BlogEditor
+              post={editingPost}
+              onSave={handleSavePost}
+              onCancel={handleCancelEdit}
+            />
+          )}
         </div>
-      </div>
+      )}
     </>
   );
 };

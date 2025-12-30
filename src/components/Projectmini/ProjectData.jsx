@@ -3,14 +3,22 @@ import port from "../Images/projectPics/port.png";
 import ats from "../Images/projectPics/ats.png";
 import soon from "../../assets/soon.webp";
 
-const fullstack = [
+const webDev = [
   {
     id: "002",
     softUsed: ["react.js", "css", "tailwind css"],
     title: "Portfolio",
     description: "The portfolio you are viewing right now",
     image: port,
-      link: "https://github.com/SuhasMartha/suhasmartha.github.io",
+    link: "https://github.com/SuhasMartha/suhasmartha.github.io",
+  },
+  {
+    id: "wd-002",
+    softUsed: ["react.js", "api integration", "css", "openweather"],
+    title: "Weather App",
+    description: "Real-time weather updates & forecasts",
+    image: soon,
+    link: "#",
   },
   {
     id: "001",
@@ -18,43 +26,45 @@ const fullstack = [
       "express.js",
       "node.js",
       "mongodb",
-      "html (ejs template)",
+      "html",
       "bootstrap",
-      "react.js",
-      "css",
+      "react.js"
     ],
     title: "OTT Streaming Platform",
     description: "Users can stream movies",
     image: ats,
     link: "https://github.com/SuhasMartha/AI-Resume-Screening-System",
   },
+];
+
+const aiMl = [
   {
-    id: "003",
-    softUsed: ["bootstrap", "react.js", "css"],
-    title: "Warehouse Stocking",
-    description: "A website to save and display Stock",
-    image: vote,
-    link: "https://github.com/SuhasMartha/Online-Voting-System",
+    id: "aiml-001",
+    softUsed: ["python", "deep learning", "CNN", "tensorflow"],
+    title: "Parkinson Disease Detection",
+    description: "Detecting stages of Parkinson's using spiral drawings",
+    image: soon,
+    link: "https://github.com/SuhasMartha/Parkinson-Disease-Classification-Deep-Learning-Project",
   },
   {
-    id: "004",
-    softUsed: [" techn is loading", " please be patient "],
-    title: "Coming soon",
-    description: "Yes, I am working on it",
+    id: "aiml-002",
+    softUsed: ["python", "yolo", "computer vision", "opencv"],
+    title: "Underwater Fish Detection",
+    description: "Identifying and classifying underwater marine life",
+    image: soon,
+    link: "https://github.com/SuhasMartha/Underwater-Fish-Detection",
+  },
+];
+
+const dataAnalytics = [
+  {
+    id: "da-001",
+    softUsed: ["python", "powerbi", "pandas", "visualization"],
+    title: "Indian Election Visualization",
+    description: "Interactive dashboard of election data & trends",
     image: soon,
     link: "#",
   },
 ];
 
-const frontend = [
-  {
-    id: "001",
-    softUsed: [" techn is loading", " please be patient "],
-    title: "Coming soon",
-    description: "Yes, I am working on it",
-    image: soon,
-    link: "#",
-  },
-];
-
-export { fullstack, frontend };
+export { aiMl, dataAnalytics, webDev };

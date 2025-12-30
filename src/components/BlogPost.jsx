@@ -11,6 +11,7 @@ import HorizontalLine from "../components/HorizontalLine";
 import 'highlight.js/styles/github-dark.css';
 import Navbar from "../Navbar";
 import Footer from "./Footer";
+import BlogCard from "../components/BlogCard"; // Import BlogCard
 import { getSupabasePostBySlug, getSupabasePosts } from "../utils/getMarkdownPosts";
 import { supabase } from "../lib/supabase";
 import { analytics, trackView, trackShare, trackReadingTime } from "../utils/analytics";
@@ -129,13 +130,15 @@ const extractHeadings = (markdown) => {
 
 // Table of Contents Component
 const TableOfContents = ({ headings }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   if (!headings || headings.length === 0) return null;
 
   const handleScroll = (e, id) => {
     e.preventDefault();
     const element = document.getElementById(id);
     if (element) {
-      const offset = 80; // height of navbar + padding
+      const offset = 120; // height of navbar + extra padding
       const elementPosition = element.getBoundingClientRect().top + window.scrollY;
       const offsetPosition = elementPosition - offset;
 
@@ -147,26 +150,52 @@ const TableOfContents = ({ headings }) => {
   };
 
   return (
-    <div className="mb-10 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-      <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-        <span className="text-lhilit-1 dark:text-dhilit-1">📑</span> Table of Contents
-      </h3>
-      <ul className="space-y-3">
-        {headings.map((heading, index) => (
-          <li
-            key={`${heading.id}-${index}`}
-            style={{ paddingLeft: `${(heading.level - 1) * 1}rem` }}
+    <div className="mb-10 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-300">
+      <div
+        className="p-6 flex items-center justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+          <span className="text-lhilit-1 dark:text-dhilit-1">📑</span> Table of Contents
+        </h3>
+        <button
+          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-transform p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
+          aria-label={isExpanded ? "Collapse Table of Contents" : "Expand Table of Contents"}
+        >
+          <svg
+            className={`w-5 h-5 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
           >
-            <a
-              href={`#${heading.id}`}
-              onClick={(e) => handleScroll(e, heading.id)}
-              className="text-gray-600 dark:text-gray-400 hover:text-lhilit-1 dark:hover:text-dhilit-1 hover:underline transition-colors"
-            >
-              {heading.text}
-            </a>
-          </li>
-        ))}
-      </ul>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+      </div>
+
+      <div
+        className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+          }`}
+      >
+        <div className="p-6 pt-0">
+          <ul className="space-y-3 border-t border-gray-200 dark:border-gray-700 pt-4">
+            {headings.map((heading, index) => (
+              <li
+                key={`${heading.id}-${index}`}
+                style={{ paddingLeft: `${(heading.level - 1) * 1}rem` }}
+              >
+                <a
+                  href={`#${heading.id}`}
+                  onClick={(e) => handleScroll(e, heading.id)}
+                  className="text-gray-600 dark:text-gray-400 hover:text-lhilit-1 dark:hover:text-dhilit-1 hover:underline transition-colors block py-0.5 text-sm"
+                >
+                  {heading.text}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
     </div>
   );
 };
@@ -354,6 +383,8 @@ const BlogPost = () => {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submitStatus, setSubmitStatus] = React.useState('');
   const [headings, setHeadings] = React.useState([]);
+  const [prevPost, setPrevPost] = React.useState(null);
+  const [nextPost, setNextPost] = React.useState(null);
 
   // Load post data
   useEffect(() => {
@@ -372,6 +403,32 @@ const BlogPost = () => {
           // Track view when post loads
           await trackView(postData.id, postData.slug);
           loadLikes(postData.id);
+
+          // Fetch all posts to determine prev/next
+          const allPosts = await getSupabasePosts();
+          // Sort posts by date descending (Newest first)
+          const sortedPosts = allPosts.sort((a, b) => new Date(b.date || b.created_at) - new Date(a.date || a.created_at));
+
+          const currentIndex = sortedPosts.findIndex(p => p.slug === slug);
+
+          if (currentIndex !== -1) {
+            // Next post in list is older (Previous Post button)
+            const prevIndex = currentIndex + 1;
+            // Previous post in list is newer (Next Post button)
+            const nextIndex = currentIndex - 1;
+
+            if (prevIndex < sortedPosts.length) {
+              setPrevPost(sortedPosts[prevIndex]);
+            } else {
+              setPrevPost(null);
+            }
+
+            if (nextIndex >= 0) {
+              setNextPost(sortedPosts[nextIndex]);
+            } else {
+              setNextPost(null);
+            }
+          }
         }
       } catch (error) {
         console.error('Error loading post:', error);
@@ -871,7 +928,7 @@ const BlogPost = () => {
                           <code className="text-lhilit-1 dark:text-dhilit-1 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm font-mono">{children}</code> :
                           <code className="text-gray-100">{children}</code>,
                       pre: ({ children }) => <pre className="bg-gray-900 dark:bg-gray-800 text-gray-100 p-4 rounded-lg overflow-x-auto my-6 border border-gray-200 dark:border-gray-700">{children}</pre>,
-                      ul: ({ children }) => <ul className="mb-4 space-y-2 pl-6 list-disc">{children}</ul>,
+                      ul: ({ children }) => <ul className="mb-4 space-y-2 pl-10 list-disc">{children}</ul>,
                       strong: ({ children }) => <strong className="text-gray-900 dark:text-gray-100 font-semibold">{children}</strong>,
                       em: ({ children }) => <em className="italic text-gray-800 dark:text-gray-200">{children}</em>,
                       del: ({ children }) => <del className="line-through text-gray-500 dark:text-gray-400">{children}</del>,
@@ -999,7 +1056,7 @@ const BlogPost = () => {
                             </ol>
                           );
                         }
-                        return <ol className="mb-4 space-y-2 pl-6 list-decimal">{children}</ol>;
+                        return <ol className="mb-4 space-y-2 pl-10 list-decimal">{children}</ol>;
                       },
                       li: ({ children, ...props }) => {
                         // Check if it's a footnote item
@@ -1238,38 +1295,136 @@ const BlogPost = () => {
           </motion.article>
           &nbsp;
 
+          {/* Previous / Next Post Navigation */}
+          {(prevPost || nextPost) && (
+            <div className="py-10">
+              <div className="max-w-[60rem] mx-auto border-t border-gray-200 dark:border-gray-800 pt-10">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="w-1 h-8 bg-gradient-to-b from-lhilit-1 to-lhilit-2 dark:from-dhilit-1 dark:to-dhilit-2 rounded-full"></div>
+                  <h3 className="head4">Read More</h3>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+                  {/* Previous Post */}
+                  {prevPost ? (
+                    <div className="flex flex-col w-full sm:max-w-sm mr-auto">
+                      <span className="text-sm font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
+                        &larr; Previous Content
+                      </span>
+                      <Link to={`/blog/${prevPost.slug}`} className="group block h-full w-full">
+                        <div className="h-full bg-[#0B0C15] border border-gray-800/60 rounded-xl overflow-hidden hover:border-purple-500/50 hover:shadow-[0_0_15px_rgba(168,85,247,0.1)] transition-all duration-300 flex flex-col">
+                          {/* Image Container */}
+                          <div className="relative h-32 overflow-hidden">
+                            <img
+                              src={prevPost.image}
+                              alt={prevPost.title}
+                              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                            />
+                            {/* Overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#0B0C15] to-transparent opacity-60"></div>
+                          </div>
+
+                          {/* Content */}
+                          <div className="p-4 flex flex-col flex-1 relative">
+                            <h4 className="text-lg font-bold text-[#a855f7] mb-2 leading-tight group-hover:text-[#c084fc] transition-colors line-clamp-2">
+                              {prevPost.title}
+                            </h4>
+
+                            <p className="text-gray-400/80 text-xs leading-relaxed line-clamp-2 mb-3">
+                              {prevPost.excerpt}
+                            </p>
+
+                            <div className="mt-auto pt-3 flex items-center justify-between border-t border-gray-800/50">
+                              <span className="text-xs text-gray-500 font-medium">{prevPost.readTime || '5 min read'}</span>
+                              <span className="text-[#a855f7] font-bold text-sm tracking-wide group-hover:text-[#c084fc] transition-colors flex items-center">
+                                Read More <span className="ml-1 text-lg leading-none">→</span>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    </div>
+                  ) : <div className="hidden sm:block" />}
+
+                  {/* Next Post */}
+                  {nextPost ? (
+                    <div className="flex flex-col w-full sm:max-w-sm ml-auto text-right">
+                      <span className="text-sm font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
+                        Next Content &rarr;
+                      </span>
+                      <Link to={`/blog/${nextPost.slug}`} className="group block h-full w-full">
+                        <div className="h-full bg-[#0B0C15] border border-gray-800/60 rounded-xl overflow-hidden hover:border-purple-500/50 hover:shadow-[0_0_15px_rgba(168,85,247,0.1)] transition-all duration-300 flex flex-col">
+                          {/* Image Container */}
+                          <div className="relative h-32 overflow-hidden">
+                            <img
+                              src={nextPost.image}
+                              alt={nextPost.title}
+                              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                            />
+                            {/* Overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#0B0C15] to-transparent opacity-60"></div>
+                          </div>
+
+                          {/* Content */}
+                          <div className="p-4 flex flex-col flex-1 relative">
+                            <h4 className="text-lg font-bold text-[#a855f7] mb-2 leading-tight group-hover:text-[#c084fc] transition-colors line-clamp-2">
+                              {nextPost.title}
+                            </h4>
+
+                            <p className="text-gray-400/80 text-xs leading-relaxed line-clamp-2 mb-3">
+                              {nextPost.excerpt}
+                            </p>
+
+                            <div className="mt-auto pt-3 flex items-center justify-between border-t border-gray-800/50">
+                              <span className="text-xs text-gray-500 font-medium">{nextPost.readTime || '5 min read'}</span>
+                              <span className="text-[#a855f7] font-bold text-sm tracking-wide group-hover:text-[#c084fc] transition-colors flex items-center">
+                                Read More <span className="ml-1 text-lg leading-none">→</span>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    </div>
+                  ) : <div className="hidden sm:block" />}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Monthly Archive and Trending Posts Section */}
           <div className="py-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Monthly Archive */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                viewport={{ once: true }}
-              >
-                <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">
-                    Monthly Archive
-                  </h3>
-                  <BlogPostMonthlyArchive />
-                </div>
-              </motion.div>
+            <div className="max-w-[60rem] mx-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Monthly Archive */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6 }}
+                  viewport={{ once: true }}
+                >
+                  <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">
+                      Monthly Archive
+                    </h3>
+                    <BlogPostMonthlyArchive />
+                  </div>
+                </motion.div>
 
-              {/* Trending Posts */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.1 }}
-                viewport={{ once: true }}
-              >
-                <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">
-                    Trending Posts
-                  </h3>
-                  <BlogPostTrendingPosts />
-                </div>
-              </motion.div>
+                {/* Trending Posts */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.1 }}
+                  viewport={{ once: true }}
+                >
+                  <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">
+                      Trending Posts
+                    </h3>
+                    <BlogPostTrendingPosts />
+                  </div>
+                </motion.div>
+              </div>
             </div>
           </div>
           <hr />
@@ -1277,8 +1432,8 @@ const BlogPost = () => {
           <div className="py-8"></div>
           <Footer />
           <div className="pb-12"></div>
-        </div>
-      </div>
+        </div >
+      </div >
     </>
   );
 };

@@ -5,7 +5,7 @@ import Footer from "../components/Footer";
 import TitlesS from "../components/TitlesSlash";
 import Titles from "../components/TitlesOther";
 import Projectmini from "../components/Projectmini/Projectmini";
-import { fullstack, frontend } from "../components/Projectmini/ProjectData";
+import { aiMl, dataAnalytics, webDev } from "../components/Projectmini/ProjectData";
 
 const Works = () => {
   const [hoveredProject, setHoveredProject] = useState(null);
@@ -13,6 +13,9 @@ const Works = () => {
   const [isImageVisible, setIsImageVisible] = useState(false);
   const animationFrameRef = useRef(null);
   const targetPosition = useRef({ x: 0, y: 0 });
+
+  // Combine all projects for hover lookup
+  const allProjects = [...aiMl, ...dataAnalytics, ...webDev];
 
   // Handle mouse move for cursor tracking
   const handleMouseMove = useCallback(
@@ -77,7 +80,7 @@ const Works = () => {
     },
   });
 
-  const currentProject = fullstack.find((p) => p.id === hoveredProject);
+  const currentProject = allProjects.find((p) => p.id === hoveredProject);
 
   return (
     <>
@@ -92,17 +95,29 @@ const Works = () => {
         <motion.p variants={container(0.5)} initial="hidden" animate="visible">
           All my works ...
         </motion.p>
-        <div className="fullstack">
+
+        {/* AI & ML Section */}
+        <div className="mb-12">
           <section className="headsectdiv">
-            <Titles htitle="fullstack" />
+            <Titles htitle=" AI & Machine Learning" />
           </section>
-          <Projectmini title="fullstack" projects={fullstack} />
+          <Projectmini title="AI & ML" projects={aiMl} />
         </div>
-        <div className="frontend">
+
+        {/* Data Analytics Section */}
+        <div className="mb-12">
           <section className="headsectdiv">
-            <Titles htitle="frontend" />
+            <Titles htitle=" Data Analytics" />
           </section>
-          <Projectmini title="frontend" projects={frontend} />
+          <Projectmini title="Data Analytics" projects={dataAnalytics} />
+        </div>
+
+        {/* Web Development Section */}
+        <div className="mb-12">
+          <section className="headsectdiv">
+            <Titles htitle=" Web Development" />
+          </section>
+          <Projectmini title="Web Development" projects={webDev} />
         </div>
         <hr />
         <div className="py-8"></div>

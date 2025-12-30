@@ -44,7 +44,8 @@
 }
 
 .navilink {
-  @apply md:hover:text-lhilit-2 md:dark:hover:text-dhilit-2 text-primary hover:shadow-lg dark:hover:bg-primary-2 block rounded-sm px-3 py-2 hover:bg-fuchsia-100 hover:text-xl md:p-0 md:hover:bg-transparent dark:text-white dark:hover:text-white md:dark:hover:bg-transparent
+  @apply text-lg hover:text-xl md:hover:text-lhilit-2 md:dark:hover:text-dhilit-2 text-primary hover:shadow-lg dark:hover:bg-primary-2 block rounded-sm px-3 py-2 hover:bg-fuchsia-100 md:p-0 md:hover:bg-transparent dark:text-white dark:hover:text-white md:dark:hover:bg-transparent;
+
 }
 
 .projecttable {

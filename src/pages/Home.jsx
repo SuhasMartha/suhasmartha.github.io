@@ -138,12 +138,10 @@ const ResumeButton = () => {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => {
-          // Replace with your actual resume file path
-          const link = document.createElement("a");
-          link.href =
-            "https://drive.google.com/file/d/10HmZzXS1ICjiBFbgrmvgxPTswoGnGgs8/view"; // Add your resume file to public folder
-          link.download = "Suhas_Resume.pdf";
-          link.click();
+          window.open(
+            "https://drive.google.com/file/d/1_3BLAS9ylTpqU9kfPtAVv1kthQN7c-ns/view?usp=sharing",
+            "_blank"
+          );
         }}
       >
         {/* Background animation */}
@@ -243,7 +241,7 @@ const Home = () => {
                   <TypingEffect
                     texts={[
                       " Student",
-                      " Data Scientist",
+                      " Data Analyst",
                       " AI & Data Engineer",
                     ]}
                   />

@@ -17,11 +17,34 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [lastActivity, setLastActivity] = useState(Date.now());
+  const [systemStatus, setSystemStatus] = useState({ status: 'checking', message: 'Connecting to database...' });
 
   useEffect(() => {
     fetchComments();
     fetchAnalytics();
+    checkSystemStatus();
   }, []);
+
+  const checkSystemStatus = async () => {
+    try {
+      const start = Date.now();
+      const { count, error } = await supabase.from('blog_posts').select('*', { count: 'exact', head: true });
+      const latency = Date.now() - start;
+
+      if (error) throw error;
+
+      setSystemStatus({
+        status: 'online',
+        message: `Database connected (${latency}ms latency)`
+      });
+    } catch (error) {
+      console.error('System check failed:', error);
+      setSystemStatus({
+        status: 'error',
+        message: `Connection Error: ${error.message || 'Unknown error'}`
+      });
+    }
+  };
 
   // Auto logout after 20 minutes of inactivity
   useEffect(() => {
@@ -32,9 +55,9 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
     const checkInactivity = () => {
       const now = Date.now();
       const inactiveTime = now - lastActivity;
-      const twentyMinutes = 20 * 60 * 1000; // 20 minutes in milliseconds
+      const tenMinutes = 10 * 60 * 1000; // 10 minutes in milliseconds
 
-      if (inactiveTime >= twentyMinutes) {
+      if (inactiveTime >= tenMinutes) {
         handleSignOut();
       }
     };
@@ -295,61 +318,131 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
       case 'dashboard':
         return (
           <div className="space-y-6">
+            {/* Welcome & Status Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                  Welcome, <span className="text-lhilit-1 dark:text-dhilit-1">{user?.email?.split('@')[0] || 'Admin'}</span>! 👋
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  Here's what's happening with your blog today.
+                </p>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">System Status</h3>
+                <div className="flex items-center gap-3">
+                  <div className={`h-3 w-3 rounded-full ${systemStatus.status === 'online' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : systemStatus.status === 'error' ? 'bg-red-500' : 'bg-yellow-500 animate-pulse'}`}></div>
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">
+                      {systemStatus.status === 'online' ? 'All Systems Operational' : systemStatus.status === 'error' ? 'System Issues Detected' : 'Checking System...'}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {systemStatus.message}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Last Login Insight */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-lg border border-blue-100 dark:border-blue-800 flex items-center justify-between">
+              <div>
+                <h3 className="text-blue-800 dark:text-blue-200 font-medium">Current Session</h3>
+                <p className="text-sm text-blue-600 dark:text-blue-300 mt-1">
+                  {user?.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : 'First Session'}
+                </p>
+              </div>
+              <div className="h-10 w-10 bg-blue-100 dark:bg-blue-800 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-200">
+                🕒
+              </div>
+            </div>
+
             {/* Statistics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Posts</h3>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalPosts}</p>
+              <div
+                onClick={() => setActiveTab('posts')}
+                className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-md hover:translate-y-[-2px] transition-all duration-200"
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Posts</h3>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-2">{stats.totalPosts}</p>
+                  </div>
+                  <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">📝</div>
+                </div>
               </div>
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Published</h3>
-                <p className="text-2xl font-bold text-green-600">{stats.publishedPosts}</p>
-              </div>
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Drafts</h3>
-                <p className="text-2xl font-bold text-yellow-600">{stats.draftPosts}</p>
-              </div>
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Comments</h3>
-                <p className="text-2xl font-bold text-blue-600">{stats.totalComments}</p>
+
+              <div
+                onClick={() => setActiveTab('comments')}
+                className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-md hover:translate-y-[-2px] transition-all duration-200"
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Comments</h3>
+                    <p className="text-2xl font-bold text-blue-600 mt-2">{stats.totalComments}</p>
+                  </div>
+                  <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-blue-600">💬</div>
+                </div>
                 {stats.pendingComments > 0 && (
-                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                  <p className="text-xs text-red-600 dark:text-red-400 mt-2 font-medium">
                     {stats.pendingComments} pending approval
                   </p>
                 )}
               </div>
+
+              {/* Analytics Snippets */}
+              <div
+                onClick={() => setActiveTab('analytics')}
+                className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-md hover:translate-y-[-2px] transition-all duration-200"
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Views</h3>
+                    <p className="text-2xl font-bold text-purple-600 mt-2">{analyticsData.totalViews || 0}</p>
+                  </div>
+                  <div className="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-lg text-purple-600">👀</div>
+                </div>
+              </div>
+
+              <div
+                onClick={() => setActiveTab('analytics')}
+                className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-md hover:translate-y-[-2px] transition-all duration-200"
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Engagement</h3>
+                    <p className="text-2xl font-bold text-green-600 mt-2">{analyticsData.engagementRate || 0}%</p>
+                  </div>
+                  <div className="p-2 bg-green-50 dark:bg-green-900/30 rounded-lg text-green-600">📈</div>
+                </div>
+              </div>
             </div>
 
-            {/* Recent Posts */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Recent Posts</h3>
-              </div>
-              <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                {posts.slice(0, 5).map((post) => (
-                  <div key={post.id} className="p-4 flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium text-gray-900 dark:text-gray-100">{post.title}</h4>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {new Date(post.created_at || post.date).toLocaleDateString()} • {post.author}
-                      </p>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => onEdit(post)}
-                        className="text-lhilit-1 dark:text-dhilit-1 hover:text-lhilit-2 dark:hover:text-dhilit-2 text-sm px-3 py-1 border border-lhilit-1 dark:border-dhilit-1 rounded transition-colors duration-300"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => onDelete(post.id)}
-                        className="text-red-600 hover:text-red-800 text-sm px-3 py-1 border border-red-600 rounded transition-colors duration-300"
-                      >
-                        Delete
-                      </button>
-                    </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div
+                onClick={() => setActiveTab('posts')}
+                className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-md hover:translate-y-[-2px] transition-all duration-200"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                    <span className="text-gray-600 dark:text-gray-300">Published Posts</span>
                   </div>
-                ))}
+                  <span className="font-bold text-gray-900 dark:text-gray-100">{stats.publishedPosts}</span>
+                </div>
+              </div>
+              <div
+                onClick={() => setActiveTab('posts')}
+                className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-md hover:translate-y-[-2px] transition-all duration-200"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
+                    <span className="text-gray-600 dark:text-gray-300">Drafts</span>
+                  </div>
+                  <span className="font-bold text-gray-900 dark:text-gray-100">{stats.draftPosts}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -388,7 +481,7 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
                       Edit
                     </button>
                     <button
-                      onClick={() => onDelete(post.slug)}
+                      onClick={() => onDelete(post.id)}
                       className="text-red-600 hover:text-red-800 text-sm px-3 py-1 border border-red-600 rounded"
                     >
                       Delete
@@ -486,8 +579,8 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
                               key={slug}
                               onClick={handleToggle}
                               className={`flex items-center gap-3 p-3 rounded-lg transition border-2 cursor-pointer ${isDisabled
-                                  ? 'opacity-50 cursor-not-allowed'
-                                  : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                                ? 'opacity-50 cursor-not-allowed'
+                                : 'hover:bg-gray-50 dark:hover:bg-gray-700'
                                 } ${checked ? 'bg-lhilit-1/10 dark:bg-dhilit-1/10 border-lhilit-1 dark:border-dhilit-1' : 'border-transparent'}`}
                             >
                               <input
@@ -539,6 +632,36 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
                 </div>
               )}
             </div>
+          </div>
+        );
+
+      case 'supabase':
+        return (
+          <div className="flex flex-col h-[calc(100vh-200px)] -m-8 relative group">
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-2 text-center text-xs text-blue-600 dark:text-blue-300 border-b border-blue-100 dark:border-blue-800 flex justify-between items-center px-4">
+              <span>
+                Note: You must be logged into Supabase in this browser. If it's blank or refused, it's a security block.
+              </span>
+              <a
+                href="https://supabase.com/dashboard/project/maagvnyxarmbzozufqcd"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 font-bold hover:text-blue-800"
+              >
+                Open External <span className="text-lg">↗</span>
+              </a>
+            </div>
+            {/* 
+              Supabase sends 'X-Frame-Options: SAMEORIGIN' which blocks standard embedding.
+              This iframe will likely fail in standard browsers without extensions to strip headers.
+              Restoring as per user request. 
+            */}
+            <iframe
+              src="https://supabase.com/dashboard/project/maagvnyxarmbzozufqcd"
+              className="w-full flex-1 border-0 bg-white"
+              title="Supabase Dashboard"
+              allow="clipboard-read; clipboard-write"
+            />
           </div>
         );
 
@@ -617,71 +740,110 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Welcome Header */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-6 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-                Welcome back, <span className="texthilit1">Admin</span>!
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400">
-                Manage your blog content, moderate comments, and track analytics.
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
+      {/* Sidebar */}
+      <aside className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+        {/* Sidebar Header */}
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <span className="text-lhilit-1 dark:text-dhilit-1">⚡</span> Admin
+          </h2>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+          {[
+            { id: 'dashboard', label: 'Dashboard', icon: '📊' },
+            { id: 'posts', label: 'Posts', icon: '📝', badge: stats.totalPosts },
+            { id: 'comments', label: 'Comments', icon: '💬', badge: stats.pendingComments > 0 ? stats.pendingComments : null, badgeColor: 'bg-red-500 text-white' },
+            { id: 'analytics', label: 'SEO & Analytics', icon: '📈' },
+            { id: 'authors', label: 'Authors', icon: '👥' },
+            { id: 'supabase', label: 'Supabase', icon: '⚡' }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${activeTab === tab.id
+                ? 'bg-lhilit-1/10 text-lhilit-1 dark:text-dhilit-1'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-200'
+                }`}
+            >
+              <span className="mr-3 text-lg">{tab.icon}</span>
+              <span className="flex-1 text-left">{tab.label}</span>
+              {tab.badge && (
+                <span className={`ml-auto px-2 py-0.5 text-xs font-semibold rounded-full ${tab.badgeColor || 'bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-200'}`}>
+                  {tab.badge}
+                </span>
+              )}
+            </button>
+          ))}
+        </nav>
+
+        {/* User Profile / Footer */}
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-3 mb-4 px-2">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-lhilit-1 to-lhilit-2 dark:from-dhilit-1 dark:to-dhilit-2 flex items-center justify-center text-white font-bold text-xs">
+              {user?.email?.[0].toUpperCase() || 'A'}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                Admin User
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                {user?.email}
               </p>
             </div>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={onCreatePost}
-                className="px-6 py-3 bg-gradient-to-r from-lhilit-1 to-lhilit-2 dark:from-dhilit-1 dark:to-dhilit-2 text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-300 transform hover:scale-105"
-              >
-                Write New Post
-              </button>
-              <button
-                onClick={handleSignOut}
-                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg transition-colors duration-300"
-              >
-                Sign Out
-              </button>
+          </div>
+          <button
+            onClick={handleSignOut}
+            className="w-full flex items-center justify-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors"
+          >
+            Sign Out
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <main className="flex-1 overflow-y-auto relative">
+        <div className="max-w-7xl mx-auto px-8 py-8">
+          {/* Top Header Section */}
+          <header className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {activeTab === 'dashboard' && 'Dashboard Overview'}
+                {activeTab === 'posts' && 'Blog Posts'}
+                {activeTab === 'comments' && 'Comment Moderation'}
+                {activeTab === 'analytics' && 'Analytics & SEO'}
+                {activeTab === 'authors' && 'Author Management'}
+                {activeTab === 'author-profile' && 'Author Profile'}
+                {activeTab === 'supabase' && 'Database Resources'}
+                {activeTab === 'editor' && 'Post Editor'}
+              </h1>
+              <p className="text-sm text-gray-500 mt-1">
+                Manage your blog content and performance
+              </p>
             </div>
-          </div>
-        </div>
 
-        {/* Navigation Tabs */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
-          <div className="flex flex-wrap border-b border-gray-200 dark:border-gray-700">
-            {[
-              { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-              { id: 'posts', label: 'Posts', icon: '📝', badge: stats.totalPosts },
-              { id: 'comments', label: 'Comments', icon: '💬', badge: stats.pendingComments > 0 ? stats.pendingComments : null, badgeColor: 'bg-red-500 text-white' },
-              { id: 'analytics', label: 'SEO & Analytics', icon: '📈' },
-              { id: 'authors', label: 'Authors', icon: '👥' }
-            ].map((tab) => (
+            {activeTab !== 'editor' && (
               <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors relative ${activeTab === tab.id
-                    ? 'border-lhilit-1 dark:border-dhilit-1 text-lhilit-1 dark:text-dhilit-1'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                  }`}
+                onClick={handleNewPost}
+                className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-lg text-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
               >
-                <span className="mr-2">{tab.icon}</span>
-                {tab.label}
-                {tab.badge && (
-                  <span className={`ml-2 px-2 py-1 text-xs text-white rounded-full ${tab.badgeColor || 'bg-gray-500'}`}>
-                    {tab.badge}
-                  </span>
-                )}
+                <span>+</span> New Post
               </button>
-            ))}
+            )}
+          </header>
+
+          {/* Dynamic Content */}
+          <div className="min-h-[500px]">
+            {renderTabContent()}
+          </div>
+
+          <div className="pt-12 pb-4 text-center text-xs text-gray-400">
+            &copy; {new Date().getFullYear()} Suhas Martha Admin Panel
           </div>
         </div>
-
-        {/* Tab Content */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          {renderTabContent()}
-        </div>
-      </div>
+      </main>
     </div>
   );
 };

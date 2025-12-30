@@ -14,7 +14,7 @@ const TitlesOther = ({ htitle }) => {
 
   return (
     <>
-      <h4 className="head4" ref={ref}>
+      <h4 className="head4 col-span-3 md:col-span-3 whitespace-nowrap" ref={ref}>
         <motion.span
           initial={{ opacity: 0 }}
           animate={isInView ? { opacity: 1 } : {}}
@@ -26,7 +26,7 @@ const TitlesOther = ({ htitle }) => {
         <TypingEffect text={htitle} />
       </h4>
       {htitle.toLowerCase() === "contact" ? null : (
-        <div className="relative left-1/4 pt-4 sm:col-span-1 md:col-span-3">
+        <div className="relative pt-4 sm:col-span-1 md:col-span-3">
           <HorizontalLine delay={typingDelay} />
         </div>
       )}

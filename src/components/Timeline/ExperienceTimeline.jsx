@@ -5,16 +5,26 @@ const ExperienceTimeline = () => {
   const experienceData = [
     {
       id: 1,
-      period: "Sept 2025",
-      position: "Internship",
+      period: "Sept 2025 - Jan 2026",
+      position: "Research Intern",
       company: "IIT Guwahati, Technology Innovation & Development Foundation",
       location: "Remote",
-      type: "Internship",
-      description: "Focused on creating modern, responsive web interfaces using React.js and Tailwind CSS. Worked closely with UI/UX designers to implement pixel-perfect designs.",
+      type: "Reserach Internship",
+      description: "Developed an underwater fish detection project using YOLOv8, involving dataset analysis, image enhancement and augmentation, model training on raw and enhanced data, and performance evaluation.",
       status: "current"
     },
     {
       id: 2,
+      period: "Oct 2025 - Dec 2025",
+      position: "Data Analyst",
+      company: "Infosys Springboard",
+      location: "Remote",
+      type: "Internship",
+      description: "Built Power BI dashboards to visualize election data, providing clear insights into vote shares, turnout, party trends, and constituency performance.",
+      status: "completed"
+    },
+    {
+      id: 3,
       period: "Jun 2025",
       position: "AI Developer Intern",
       company: "Viswam AI",
