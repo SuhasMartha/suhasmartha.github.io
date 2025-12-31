@@ -102,7 +102,7 @@ _Note: Only the first 10 items are shown per directory due to API limitations. [
 - [x] Add Animations
 - [x] Improve Images & Visuals
 - [x] Write Blogs
-- [ ] Update Projects
+- [x] Update Projects
 - [ ] Delete Unused Code
 - [ ] Set Up Custom Domain
 
@@ -122,9 +122,9 @@ _Note: Only the first 10 items are shown per directory due to API limitations. [
 | Git & GitHub    | Version Control               |
 
 **Language Composition:**
-- JavaScript: 94.1%
-- CSS: 4.8%
-- HTML: 1.1%
+- JavaScript: 94.8%
+- CSS: 4.2%
+- HTML: 1.0%
 
 ---
 
@@ -195,4 +195,4 @@ Licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
 > Built with ❤️ by [Suhas](https://github.com/SuhasMartha)
 
-<sub>Last Updated: 14-12-2025</sub>
+<sub>Last Updated: 31-12-2025</sub>
