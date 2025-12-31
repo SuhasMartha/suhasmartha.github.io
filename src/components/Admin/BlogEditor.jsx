@@ -110,7 +110,7 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
       };
 
       let result;
-      if (post) {
+      if (post && post.id) {
         // Update existing post
         result = await supabase
           .from('blog_posts')
@@ -777,44 +777,41 @@ const BlogEditor = ({ post, onSave, onCancel }) => {
 
           {/* Settings */}
           <div className="flex flex-wrap gap-6">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                name="featured"
-                checked={formData.featured}
-                onChange={handleInputChange}
-                className="w-4 h-4 text-lhilit-1 dark:text-dhilit-1 bg-gray-100 border-gray-300 rounded focus:ring-lhilit-1 dark:focus:ring-dhilit-1 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-              />
+            <div
+              className="flex items-center cursor-pointer select-none"
+              onClick={() => setFormData(p => ({ ...p, featured: !p.featured }))}
+            >
+              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${formData.featured ? 'bg-lhilit-1 border-lhilit-1 dark:bg-dhilit-1 dark:border-dhilit-1' : 'bg-gray-100 border-gray-300 dark:bg-gray-700 dark:border-gray-600'}`}>
+                {formData.featured && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+              </div>
               <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                 Featured Post
               </span>
-            </label>
+            </div>
 
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                name="comments_enabled"
-                checked={formData.comments_enabled}
-                onChange={handleInputChange}
-                className="w-4 h-4 text-lhilit-1 dark:text-dhilit-1 bg-gray-100 border-gray-300 rounded focus:ring-lhilit-1 dark:focus:ring-dhilit-1 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-              />
+            <div
+              className="flex items-center cursor-pointer select-none"
+              onClick={() => setFormData(p => ({ ...p, comments_enabled: !p.comments_enabled }))}
+            >
+              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${formData.comments_enabled ? 'bg-lhilit-1 border-lhilit-1 dark:bg-dhilit-1 dark:border-dhilit-1' : 'bg-gray-100 border-gray-300 dark:bg-gray-700 dark:border-gray-600'}`}>
+                {formData.comments_enabled && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+              </div>
               <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                 Enable Comments
               </span>
-            </label>
+            </div>
 
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                name="published"
-                checked={formData.published}
-                onChange={handleInputChange}
-                className="w-4 h-4 text-lhilit-1 dark:text-dhilit-1 bg-gray-100 border-gray-300 rounded focus:ring-lhilit-1 dark:focus:ring-dhilit-1 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-              />
+            <div
+              className="flex items-center cursor-pointer select-none"
+              onClick={() => setFormData(p => ({ ...p, published: !p.published }))}
+            >
+              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${formData.published ? 'bg-lhilit-1 border-lhilit-1 dark:bg-dhilit-1 dark:border-dhilit-1' : 'bg-gray-100 border-gray-300 dark:bg-gray-700 dark:border-gray-600'}`}>
+                {formData.published && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+              </div>
               <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                 Publish Post
               </span>
-            </label>
+            </div>
           </div>
 
           {/* Error message */}

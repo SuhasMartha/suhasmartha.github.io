@@ -1,10 +1,31 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import image from "../assets/DP.jpg";
 import { motion } from "framer-motion";
 import { useMediaQuery } from "react-responsive";
+import { supabase } from "../lib/supabase";
 
 const AboutMini = ({ htitle, container, container2 }) => {
   const isMobile = useMediaQuery({ maxWidth: 950 });
+  const [content, setContent] = useState({ intro: '', details: '' });
+
+  useEffect(() => {
+    const fetchContent = async () => {
+      try {
+        const { data } = await supabase.from('site_content').select('*').in('section_key', ['about_intro', 'about_details']);
+        if (data) {
+          const newContent = {};
+          data.forEach(item => {
+            if (item.section_key === 'about_intro') newContent.intro = item.content;
+            if (item.section_key === 'about_details') newContent.details = item.content;
+          });
+          setContent(prev => ({ ...prev, ...newContent }));
+        }
+      } catch (error) {
+        console.error('Error fetching about content:', error);
+      }
+    };
+    fetchContent();
+  }, []);
 
   return (
     <>
@@ -16,8 +37,14 @@ const AboutMini = ({ htitle, container, container2 }) => {
             animate="visible"
             className="py-5"
           >
-            Hey! You can call me
-            <span className="texthilit1"> Suhas</span>!!
+            {content.intro ? (
+              <span dangerouslySetInnerHTML={{ __html: content.intro }} />
+            ) : (
+              <>
+                Hey! You can call me
+                <span className="texthilit1"> Suhas</span>!!
+              </>
+            )}
           </motion.p>
           <div className="flex justify-center mt-0 mb-2">
             <img
@@ -32,15 +59,21 @@ const AboutMini = ({ htitle, container, container2 }) => {
             animate="visible"
             className="relative py-5"
           >
-            I'm an <span className="font-bold">aspiring Data Scientist</span>{" "}
-            with a strong foundation in the&nbsp;
-            <span className="xplain decoration-lhilit-1 dark:decoration-dhilit-1 underline-offset-4 dark:relative dark:underline">
-              Python,ML,NLP,TensorFlow & PowerBI
-            </span>
-            <span>. </span>
-            As a recent trainee, I'm eager to apply my
-            skills to real-world projects and grow into a confident,
-            industry-ready anlayst.
+            {content.details ? (
+              <span dangerouslySetInnerHTML={{ __html: content.details }} />
+            ) : (
+              <>
+                I'm an <span className="font-bold">aspiring Data Scientist</span>{" "}
+                with a strong foundation in the&nbsp;
+                <span className="xplain decoration-lhilit-1 dark:decoration-dhilit-1 underline-offset-4 dark:relative dark:underline">
+                  Python,ML,NLP,TensorFlow & PowerBI
+                </span>
+                <span>. </span>
+                As a recent trainee, I'm eager to apply my
+                skills to real-world projects and grow into a confident,
+                industry-ready anlayst.
+              </>
+            )}
           </motion.p>
           <motion.p
             variants={container(1.3)}
@@ -53,15 +86,15 @@ const AboutMini = ({ htitle, container, container2 }) => {
           <motion.p
             {...(isMobile
               ? {
-                  whileInView: { opacity: 1, x: 0 },
-                  initial: { opacity: 0, x: -100 },
-                  transition: { duration: 0.5 },
-                }
+                whileInView: { opacity: 1, x: 0 },
+                initial: { opacity: 0, x: -100 },
+                transition: { duration: 0.5 },
+              }
               : {
-                  variants: container2(1.9),
-                  initial: "hidden",
-                  animate: "visible",
-                })}
+                variants: container2(1.9),
+                initial: "hidden",
+                animate: "visible",
+              })}
             className="py-5"
           >
             I’m constantly driven by curiosity, whether it’s understanding how systems work behind the scenes, experimenting with new tools and frameworks, or staying updated on the latest innovations in tech. I find joy in writing clean, efficient code, but what excites me even more is the impact that code can create.
@@ -69,15 +102,15 @@ const AboutMini = ({ htitle, container, container2 }) => {
           <motion.p
             {...(isMobile
               ? {
-                  whileInView: { opacity: 1, x: 0 },
-                  initial: { opacity: 0, x: -100 },
-                  transition: { duration: 0.5 },
-                }
+                whileInView: { opacity: 1, x: 0 },
+                initial: { opacity: 0, x: -100 },
+                transition: { duration: 0.5 },
+              }
               : {
-                  variants: container(1.5),
-                  initial: "hidden",
-                  animate: "visible",
-                })}
+                variants: container(1.5),
+                initial: "hidden",
+                animate: "visible",
+              })}
             className="py-5"
           >
             As a fresher, I'm constantly learning, building side projects, and
@@ -88,15 +121,15 @@ const AboutMini = ({ htitle, container, container2 }) => {
           <motion.p
             {...(isMobile
               ? {
-                  whileInView: { opacity: 1, x: 0 },
-                  initial: { opacity: 0, x: -100 },
-                  transition: { duration: 0.5 },
-                }
+                whileInView: { opacity: 1, x: 0 },
+                initial: { opacity: 0, x: -100 },
+                transition: { duration: 0.5 },
+              }
               : {
-                  variants: container2(1.9),
-                  initial: "hidden",
-                  animate: "visible",
-                })}
+                variants: container2(1.9),
+                initial: "hidden",
+                animate: "visible",
+              })}
             className="py-5"
           >
             I value collaboration, lifelong learning, and working on ideas that push boundaries. Whether it's designing intelligent systems, diving deep into patterns hidden in data, or building intuitive user experiences, I’m always up for the challenge.
@@ -104,15 +137,15 @@ const AboutMini = ({ htitle, container, container2 }) => {
           <motion.p
             {...(isMobile
               ? {
-                  whileInView: { opacity: 1, x: 0 },
-                  initial: { opacity: 0, x: -100 },
-                  transition: { duration: 0.5 },
-                }
+                whileInView: { opacity: 1, x: 0 },
+                initial: { opacity: 0, x: -100 },
+                transition: { duration: 0.5 },
+              }
               : {
-                  variants: container2(1.9),
-                  initial: "hidden",
-                  animate: "visible",
-                })}
+                variants: container2(1.9),
+                initial: "hidden",
+                animate: "visible",
+              })}
             className="py-5"
           >
             Let's connect and build something awesome together!
@@ -126,24 +159,36 @@ const AboutMini = ({ htitle, container, container2 }) => {
             animate="visible"
             className="py-5"
           >
-            Hey! You can call me
-            <span className="texthilit1"> Suhas</span>!!
+            {content.intro ? (
+              <span dangerouslySetInnerHTML={{ __html: content.intro }} />
+            ) : (
+              <>
+                Hey! You can call me
+                <span className="texthilit1"> Suhas</span>!!
+              </>
+            )}
           </motion.p>
           <motion.p
             {...(isMobile
               ? {
-                  whileInView: { opacity: 1, x: 0 },
-                  initial: { opacity: 0, x: -100 },
-                  transition: { duration: 0.5 },
-                }
+                whileInView: { opacity: 1, x: 0 },
+                initial: { opacity: 0, x: -100 },
+                transition: { duration: 0.5 },
+              }
               : {
-                  variants: container2(1.1),
-                  initial: "hidden",
-                  animate: "visible",
-                })}
+                variants: container2(1.1),
+                initial: "hidden",
+                animate: "visible",
+              })}
             className="relative py-5"
           >
-            A motivated Data Science Fresher looking to leverage my strong programming skills in Python and R, analytical aptitude, and knowledge of data visualizations to effectively analyze, interpret, and present insights from large datasets in an accurate and meaningful way. Looking to collaborate with a leading data science and AI team to develop innovative models to detect patterns and trends for complex data-driven solutions.
+            {content.details ? (
+              <span dangerouslySetInnerHTML={{ __html: content.details }} />
+            ) : (
+              <>
+                A motivated Data Science Fresher looking to leverage my strong programming skills in Python and R, analytical aptitude, and knowledge of data visualizations to effectively analyze, interpret, and present insights from large datasets in an accurate and meaningful way. Looking to collaborate with a leading data science and AI team to develop innovative models to detect patterns and trends for complex data-driven solutions.
+              </>
+            )}
           </motion.p>
           <motion.p
             whileInView={{ opacity: 1, x: 0 }}

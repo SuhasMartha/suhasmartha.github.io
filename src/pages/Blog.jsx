@@ -244,23 +244,20 @@ const Blog = () => {
     setSubmitStatus('');
 
     try {
-      const formData = new FormData();
-      formData.append('email', newsletterData.email);
-      formData.append('_subject', 'New Blog Newsletter Subscription');
-      formData.append('_captcha', 'false');
+      const { error } = await supabase
+        .from('newsletter_subscribers')
+        .insert([
+          {
+            email: newsletterData.email,
+            status: 'active'
+          }
+        ]);
 
-      const response = await fetch('https://formspree.io/f/mldlaegq', {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-
-      if (response.ok) {
+      if (!error) {
         setSubmitStatus('success');
         setNewsletterData({ email: '' });
       } else {
+        console.error('Supabase error:', error);
         setSubmitStatus('error');
       }
     } catch (error) {

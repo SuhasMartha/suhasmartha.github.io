@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { supabase } from "../lib/supabase";
 
 const ContactMini = ({ htitle, container, container2 }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -46,27 +47,25 @@ const ContactMini = ({ htitle, container, container2 }) => {
     setSubmitStatus('');
 
     try {
-      // Using Formspree for form handling (you'll need to sign up at formspree.io)
-      const response = await fetch('https://formspree.io/f/mldldqwv', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          phone: formData.phone,
-          subject: formData.subject,
-          message: formData.message,
-          _replyto: formData.email,
-        }),
-      });
+      const { error } = await supabase
+        .from('contact_messages')
+        .insert([
+          {
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            email: formData.email,
+            phone: formData.phone,
+            subject: formData.subject,
+            message: formData.message,
+            status: 'unread'
+          }
+        ]);
 
-      if (response.ok) {
+      if (!error) {
         setSubmitStatus('success');
         setFormData({ firstName: '', lastName: '', email: '', phone: '', subject: '', message: '' });
       } else {
+        console.error('Supabase error:', error);
         setSubmitStatus('error');
       }
     } catch (error) {
@@ -78,7 +77,7 @@ const ContactMini = ({ htitle, container, container2 }) => {
   };
 
   const color = isDarkMode ? "e5e7eb" : "282C33";
-  
+
   const socialLinks = [
     {
       name: "LinkedIn",
@@ -86,7 +85,7 @@ const ContactMini = ({ htitle, container, container2 }) => {
       text: "LinkedIn"
     },
     {
-      name: "GitHub", 
+      name: "GitHub",
       url: "https://github.com/SuhasMartha",
       text: "GitHub"
     },
@@ -124,15 +123,15 @@ const ContactMini = ({ htitle, container, container2 }) => {
                 I'm looking forward to being a part of your team! Let me help you
                 develop your ideas into an internet reality.
               </motion.p>
-              
+
               <motion.p
                 animate={{ opacity: 1, x: 0 }}
                 initial={{ opacity: 0, x: -100 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
                 className="text-base text-gray-600 dark:text-gray-400"
               >
-                Whether you're looking for a passionate developer to join your team, 
-                have a project in mind, or just want to connect and discuss technology, 
+                Whether you're looking for a passionate developer to join your team,
+                have a project in mind, or just want to connect and discuss technology,
                 I'd love to hear from you. Let's build something amazing together!
               </motion.p>
             </div>
@@ -147,7 +146,7 @@ const ContactMini = ({ htitle, container, container2 }) => {
               >
                 Connect with me
               </motion.h3>
-              
+
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -176,7 +175,7 @@ const ContactMini = ({ htitle, container, container2 }) => {
               </motion.div>
             </div>
           </div>
-          
+
           {/* Contact Form */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -298,7 +297,7 @@ const ContactMini = ({ htitle, container, container2 }) => {
                 >
                   {/* Background animation */}
                   <div className="absolute inset-0 bg-gradient-to-r from-lhilit-2 to-lhilit-1 opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:from-dhilit-2 dark:to-dhilit-1"></div>
-                  
+
                   {/* Button content */}
                   <div className="relative flex items-center gap-3">
                     {isSubmitting ? (

@@ -1,81 +1,87 @@
-import React, { useCallback, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useCallback, useRef, useState } from "react";
+import { motion } from "framer-motion";
 
-const ANIMATION_CONFIG = { duration: 0.5, ease: "easeInOut" };
-
-const DesktopCard = ({ project, isHovered, onMouseMove }) => {
+const DesktopCard = ({ project }) => {
   const cardRef = useRef(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
-  const handleMouseMove = useCallback(
-    (e) => {
-      if (!cardRef.current || !isHovered) return;
-      onMouseMove(e);
-    },
-    [isHovered, onMouseMove],
-  );
+  const handleMouseMove = useCallback((e) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    setMousePosition({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
+  }, []);
 
   return (
-    <AnimatePresence mode="wait">
-      {isHovered ? (
-        <motion.div
-          ref={cardRef}
-          key="hover"
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: "auto", opacity: 1 }}
-          exit={{ height: 0, opacity: 0 }}
-          transition={{
-            height: ANIMATION_CONFIG,
-            opacity: ANIMATION_CONFIG,
-          }}
-          style={{ position: "relative" }}
-          className="cursor-none"
-          onMouseMove={handleMouseMove}
-        >
-          <div className="notification">
-            <div className="notiglow"></div>
-            <div className="notiborderglow"></div>
-            <div className="notititle texthilit1 text-center">
-              {project.title}
-            </div>
-            <div className="categories">
-              {project.softUsed.map((tech, index) => (
-                <span
-                  key={index}
-                  className="text-primary2 dark:text-2ndry-1 ml-2 rounded-full text-sm"
-                >
-                  {tech}
-                </span>
-              ))}
-            </div>
-          </div>
-        </motion.div>
-      ) : (
-        <motion.div
-          key="default"
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: "auto", opacity: 1 }}
-          exit={{ height: 0, opacity: 0 }}
-          transition={{
-            height: { duration: 1, ease: "easeInOut" },
-            opacity: { duration: 1, ease: "easeInOut" },
-          }}
-          style={{ overflow: "hidden" }}
-        >
-          <div className="bg-2ndry-2/10 dark:bg-primary-4/30 relative isolate my-8 flex flex-col items-center overflow-hidden rounded-xl shadow-xl/20 backdrop-blur-2xl [unicode-bidi:isolate]">
-            <div className="relative w-full py-6 pr-4 pl-12 before:absolute before:left-6 before:z-[10] before:h-4/5 before:w-1 before:bg-[#373c3d] before:content-['']">
-              <p className="whitespace-pre-wrap [&:not(:first-child)]:mt-3">
-                <span className="block text-center font-bold">
-                  {project.title}
-                </span>{" "}
-                <span className="text-primary-3 dark:text-primary-5">
-                  {project.description}
-                </span>
-              </p>
-            </div>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <motion.div
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      whileHover={{
+        y: [-5, -12],
+        rotate: [0, -2, 2, -1, 1, 0],
+        scale: 1.02,
+      }}
+      transition={{
+        y: {
+          duration: 1.5,
+          repeat: Infinity,
+          repeatType: "reverse",
+          ease: "easeInOut",
+        },
+        rotate: {
+          duration: 0.5,
+          ease: "backOut",
+        },
+        scale: {
+          duration: 0.2,
+        },
+      }}
+      className="relative w-full h-full min-h-[180px] rounded-2xl isolate overflow-hidden group cursor-pointer"
+    >
+      {/* Background with Blur */}
+      <div className="absolute inset-0 bg-2ndry-2/10 dark:bg-primary-4/30 backdrop-blur-xl transition-all duration-500 rounded-2xl border border-transparent group-hover:border-gray-200 dark:group-hover:border-gray-700/50"></div>
+
+      {/* Spotlight Effect */}
+      <div
+        className="pointer-events-none absolute -inset-px opacity-0 transition duration-300 group-hover:opacity-100"
+        style={{
+          background: `radial-gradient(600px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(168, 85, 247, 0.1), transparent 40%)`,
+        }}
+      />
+
+      {/* Content Container */}
+      <div className="relative z-10 flex flex-col justify-between h-full p-6 pl-10">
+
+        {/* Decorative Vertical Line */}
+        <div className="absolute left-6 top-1/2 -translate-y-1/2 h-3/4 w-1 bg-gradient-to-b from-gray-300 to-transparent dark:from-gray-700 rounded-full opacity-50 group-hover:h-[85%] group-hover:from-lhilit-1 group-hover:opacity-100 transition-all duration-500"></div>
+
+        <div className="flex flex-col justify-center flex-grow pl-4">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 group-hover:text-lhilit-1 dark:group-hover:text-dhilit-1 transition-colors duration-300 mb-2">
+            {project.title}
+          </h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-3 group-hover:text-gray-800 dark:group-hover:text-gray-300 transition-colors duration-300">
+            {project.description}
+          </p>
+        </div>
+
+        {/* Tools List */}
+        <div className="mt-6 flex flex-wrap gap-2 pl-4">
+          {project.softUsed.map((tech, index) => (
+            <span
+              key={index}
+              className="text-[10px] uppercase font-bold tracking-wider text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-700 rounded px-2 py-0.5 bg-white/40 dark:bg-black/20 group-hover:border-lhilit-1/30 dark:group-hover:border-dhilit-1/30 transition-all duration-300"
+            >
+              {tech}
+            </span>
+          ))}
+        </div>
+      </div>
+    </motion.div>
   );
 };
 

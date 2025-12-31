@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "../../lib/supabase";
 import { analytics } from "../../utils/analytics";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 const PostAnalytics = ({ posts, comments, analyticsData }) => {
   const [selectedPost, setSelectedPost] = useState(null);
@@ -10,12 +11,55 @@ const PostAnalytics = ({ posts, comments, analyticsData }) => {
   const [seoData, setSeoData] = useState({});
   const [editingSEO, setEditingSEO] = useState(null);
   const [seoFormData, setSeoFormData] = useState({});
+  const [locationData, setLocationData] = useState([]);
+  const [deviceData, setDeviceData] = useState({ Mobile: 0, Desktop: 0, Tablet: 0, total: 0 });
 
   useEffect(() => {
     calculatePostStats();
     initializeSEOData();
     loadRealTimeAnalytics();
+    loadLocationAndDeviceData();
   }, [posts, comments]);
+
+  const loadLocationAndDeviceData = async () => {
+    try {
+      const { data: viewsData, error } = await supabase
+        .from('post_views')
+        .select('country, device_type');
+
+      if (error) throw error;
+
+      // Process Country Data
+      const countryCounts = {};
+      viewsData.forEach(view => {
+        const country = view.country || 'Unknown';
+        countryCounts[country] = (countryCounts[country] || 0) + 1;
+      });
+
+      const sortedLocations = Object.entries(countryCounts)
+        .map(([name, value]) => ({ name, value }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 5); // Top 5
+
+      setLocationData(sortedLocations);
+
+      // Process Device Data
+      const devices = { Mobile: 0, Desktop: 0, Tablet: 0, total: 0 };
+      viewsData.forEach(view => {
+        const type = view.device_type || 'Unknown';
+        if (devices[type] !== undefined) {
+          devices[type]++;
+          devices.total++;
+        } else if (type === 'Unknown') {
+          // optionally handle unknown
+        }
+      });
+      setDeviceData(devices);
+
+    } catch (error) {
+      console.error("Error fetching location/device data:", error);
+    }
+  };
 
   const loadRealTimeAnalytics = async () => {
     try {
@@ -249,7 +293,149 @@ const PostAnalytics = ({ posts, comments, analyticsData }) => {
         </motion.div>
       </div>
 
-      {/* Top Performing Posts */}
+      {/* Traffic & Engagement Graphs */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-200 dark:border-gray-700"
+        >
+          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6">
+            Traffic Overview (Top Posts)
+          </h3>
+          <div className="h-[300px] w-full text-xs">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={topPosts} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#374151" opacity={0.1} />
+                <XAxis type="number" hide />
+                <YAxis
+                  dataKey="title"
+                  type="category"
+                  width={100}
+                  tickFormatter={(value) => value.length > 15 ? `${value.substring(0, 15)}...` : value}
+                  tick={{ fill: '#6B7280' }}
+                />
+                <Tooltip
+                  cursor={{ fill: 'transparent' }}
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                />
+                <Bar dataKey="stats.views" name="Views" fill="#8B5CF6" radius={[0, 4, 4, 0]} barSize={20} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-200 dark:border-gray-700"
+        >
+          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6">
+            Engagement Distribution
+          </h3>
+          <div className="h-[300px] w-full text-xs">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={topPosts} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorComments" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="title" tick={false} axisLine={false} />
+                <YAxis hide />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#374151" opacity={0.1} />
+                <Tooltip
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                />
+                <Area type="monotone" dataKey="stats.comments" name="Comments" stroke="#3B82F6" fillOpacity={1} fill="url(#colorComments)" />
+                <Area type="monotone" dataKey="stats.views" name="Views" stroke="#8B5CF6" fill="none" strokeDasharray="5 5" opacity={0.5} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Location & Devices (Real Data) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-200 dark:border-gray-700"
+        >
+          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6">
+            Traffic by Location
+          </h3>
+          <div className="h-[300px] w-full text-xs">
+            {locationData && locationData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  layout="vertical"
+                  data={locationData}
+                  margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#374151" opacity={0.1} />
+                  <XAxis type="number" hide />
+                  <YAxis
+                    dataKey="name"
+                    type="category"
+                    width={100}
+                    tick={{ fill: '#6B7280' }}
+                  />
+                  <Tooltip
+                    cursor={{ fill: 'transparent' }}
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                  />
+                  <Bar dataKey="value" name="Views" fill="#10B981" radius={[0, 4, 4, 0]} barSize={20} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-gray-400">
+                No location data yet
+              </div>
+            )}
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-200 dark:border-gray-700"
+        >
+          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6">
+            Device Breakdown
+          </h3>
+          <div className="flex items-center justify-center h-[300px]">
+            {deviceData && (deviceData.Mobile > 0 || deviceData.Desktop > 0 || deviceData.Tablet > 0) ? (
+              <div className="flex items-center gap-12">
+                <div className="flex flex-col items-center">
+                  <div className="w-24 h-24 rounded-full border-[6px] border-blue-500 flex items-center justify-center text-xl font-bold text-blue-500 mb-2 shadow-lg">
+                    {deviceData.total > 0 ? Math.round((deviceData.Mobile / deviceData.total) * 100) : 0}%
+                  </div>
+                  <span className="text-gray-600 dark:text-gray-300 font-medium">Mobile</span>
+                  <span className="text-xs text-gray-400">({deviceData.Mobile})</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <div className="w-24 h-24 rounded-full border-[6px] border-purple-500 flex items-center justify-center text-xl font-bold text-purple-500 mb-2 shadow-lg">
+                    {deviceData.total > 0 ? Math.round((deviceData.Desktop / deviceData.total) * 100) : 0}%
+                  </div>
+                  <span className="text-gray-600 dark:text-gray-300 font-medium">Desktop</span>
+                  <span className="text-xs text-gray-400">({deviceData.Desktop})</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <div className="w-24 h-24 rounded-full border-[6px] border-yellow-500 flex items-center justify-center text-xl font-bold text-yellow-500 mb-2 shadow-lg">
+                    {deviceData.total > 0 ? Math.round((deviceData.Tablet / deviceData.total) * 100) : 0}%
+                  </div>
+                  <span className="text-gray-600 dark:text-gray-300 font-medium">Tablet</span>
+                  <span className="text-xs text-gray-400">({deviceData.Tablet})</span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-gray-400">No device data available</div>
+            )}
+          </div>
+        </motion.div>
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -426,101 +612,103 @@ const PostAnalytics = ({ posts, comments, analyticsData }) => {
       </motion.div>
 
       {/* SEO Edit Modal */}
-      {editingSEO && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700 shadow-2xl"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                🔍 Edit SEO Settings
-              </h3>
-              <button
-                onClick={() => setEditingSEO(null)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-300"
-              >
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  📝 Meta Title
-                </label>
-                <input
-                  type="text"
-                  value={seoFormData.metaTitle || ''}
-                  onChange={(e) => setSeoFormData(prev => ({
-                    ...prev,
-                    metaTitle: e.target.value
-                  }))}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-lhilit-1 dark:focus:ring-dhilit-1 focus:border-transparent transition-all duration-300"
-                  placeholder="Enter SEO-optimized title"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  📄 Meta Description
-                </label>
-                <textarea
-                  value={seoFormData.metaDescription || ''}
-                  onChange={(e) => setSeoFormData(prev => ({
-                    ...prev,
-                    metaDescription: e.target.value
-                  }))}
-                  rows="3"
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-lhilit-1 dark:focus:ring-dhilit-1 focus:border-transparent transition-all duration-300"
-                  placeholder="Enter compelling meta description (150-160 characters)"
-                />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {seoFormData.metaDescription?.length || 0}/160 characters
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  🏷️ Keywords
-                </label>
-                <input
-                  type="text"
-                  value={seoFormData.keywords || ''}
-                  onChange={(e) => setSeoFormData(prev => ({
-                    ...prev,
-                    keywords: e.target.value
-                  }))}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-lhilit-1 dark:focus:ring-dhilit-1 focus:border-transparent transition-all duration-300"
-                  placeholder="keyword1, keyword2, keyword3"
-                />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Separate keywords with commas
-                </p>
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-4">
+      {
+        editingSEO && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700 shadow-2xl"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                  🔍 Edit SEO Settings
+                </h3>
                 <button
                   onClick={() => setEditingSEO(null)}
-                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg transition-colors duration-300"
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-300"
                 >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleSEOUpdate(editingSEO, seoFormData)}
-                  className="px-6 py-2 bg-gradient-to-r from-lhilit-1 to-lhilit-2 dark:from-dhilit-1 dark:to-dhilit-2 text-white rounded-lg hover:shadow-lg transition-all duration-300 transform hover:scale-105"
-                >
-                  💾 Save SEO
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
               </div>
-            </div>
-          </motion.div>
-        </div>
-      )}
-    </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    📝 Meta Title
+                  </label>
+                  <input
+                    type="text"
+                    value={seoFormData.metaTitle || ''}
+                    onChange={(e) => setSeoFormData(prev => ({
+                      ...prev,
+                      metaTitle: e.target.value
+                    }))}
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-lhilit-1 dark:focus:ring-dhilit-1 focus:border-transparent transition-all duration-300"
+                    placeholder="Enter SEO-optimized title"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    📄 Meta Description
+                  </label>
+                  <textarea
+                    value={seoFormData.metaDescription || ''}
+                    onChange={(e) => setSeoFormData(prev => ({
+                      ...prev,
+                      metaDescription: e.target.value
+                    }))}
+                    rows="3"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-lhilit-1 dark:focus:ring-dhilit-1 focus:border-transparent transition-all duration-300"
+                    placeholder="Enter compelling meta description (150-160 characters)"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {seoFormData.metaDescription?.length || 0}/160 characters
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    🏷️ Keywords
+                  </label>
+                  <input
+                    type="text"
+                    value={seoFormData.keywords || ''}
+                    onChange={(e) => setSeoFormData(prev => ({
+                      ...prev,
+                      keywords: e.target.value
+                    }))}
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-lhilit-1 dark:focus:ring-dhilit-1 focus:border-transparent transition-all duration-300"
+                    placeholder="keyword1, keyword2, keyword3"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Separate keywords with commas
+                  </p>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    onClick={() => setEditingSEO(null)}
+                    className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg transition-colors duration-300"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => handleSEOUpdate(editingSEO, seoFormData)}
+                    className="px-6 py-2 bg-gradient-to-r from-lhilit-1 to-lhilit-2 dark:from-dhilit-1 dark:to-dhilit-2 text-white rounded-lg hover:shadow-lg transition-all duration-300 transform hover:scale-105"
+                  >
+                    💾 Save SEO
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )
+      }
+    </div >
   );
 };
 

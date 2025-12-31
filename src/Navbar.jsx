@@ -73,11 +73,6 @@ const Navbar = () => {
               </Link>
             </li>
             <li>
-              <Link to="/games" className="navilink" target="_blank" rel="noopener noreferrer">
-                <span className="texthilit1">#</span>Fun-Zone
-              </Link>
-            </li>
-            <li>
               <Link to="/contact" className="navilink">
                 <span className="texthilit1">#</span>Contact
               </Link>

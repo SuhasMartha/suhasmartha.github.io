@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
+import { supabase } from "../lib/supabase";
 import Navbar from "../Navbar";
 import Footer from "../components/Footer";
 
@@ -7,6 +8,7 @@ const Games = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [feedbackData, setFeedbackData] = useState({
     name: '',
+    email: '',
     message: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -136,24 +138,22 @@ const Games = () => {
     setSubmitStatus('');
 
     try {
-      const formData = new FormData();
-      formData.append('name', feedbackData.name);
-      formData.append('message', feedbackData.message);
-      formData.append('_subject', 'New Game Idea / Bug Report');
-      formData.append('_captcha', 'false');
+      const { error } = await supabase
+        .from('game_feedback')
+        .insert([
+          {
+            name: feedbackData.name,
+            email: feedbackData.email,
+            message: feedbackData.message,
+            status: 'new'
+          }
+        ]);
 
-      const response = await fetch('https://formspree.io/f/xrblrdgy', {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-
-      if (response.ok) {
+      if (!error) {
         setSubmitStatus('success');
-        setFeedbackData({ name: '', message: '' });
+        setFeedbackData({ name: '', email: '', message: '' });
       } else {
+        console.error('Supabase error:', error);
         setSubmitStatus('error');
       }
     } catch (error) {
@@ -217,8 +217,8 @@ const Games = () => {
                   key={category}
                   onClick={() => setSelectedCategory(category)}
                   className={`px-6 py-3 rounded-full text-sm font-semibold transition-all duration-300 ${selectedCategory === category
-                      ? "bg-lhilit-1 dark:bg-dhilit-1 text-white shadow-lg transform scale-105"
-                      : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-lhilit-1/10 dark:hover:bg-dhilit-1/10 hover:text-lhilit-1 dark:hover:text-dhilit-1 hover:scale-105"
+                    ? "bg-lhilit-1 dark:bg-dhilit-1 text-white shadow-lg transform scale-105"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-lhilit-1/10 dark:hover:bg-dhilit-1/10 hover:text-lhilit-1 dark:hover:text-dhilit-1 hover:scale-105"
                     }`}
                 >
                   {category}
@@ -262,8 +262,8 @@ const Games = () => {
                       onClick={() => handlePlayGame(game)}
                       disabled={game.status === "coming-soon"}
                       className={`w-full py-3 rounded-lg font-semibold transition-all duration-300 ${game.status === "available"
-                          ? "bg-lhilit-1 dark:bg-dhilit-1 text-white hover:bg-lhilit-2 dark:hover:bg-dhilit-2 hover:shadow-lg transform hover:scale-105 cursor-pointer"
-                          : "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                        ? "bg-lhilit-1 dark:bg-dhilit-1 text-white hover:bg-lhilit-2 dark:hover:bg-dhilit-2 hover:shadow-lg transform hover:scale-105 cursor-pointer"
+                        : "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                         }`}
                     >
                       {game.status === "available" ? "Play Game" : "Coming Soon"}
@@ -302,7 +302,7 @@ const Games = () => {
                 <input
                   type="email"
                   name="email"
-                  value={feedbackData.name}
+                  value={feedbackData.email}
                   onChange={handleFeedbackInputChange}
                   placeholder="your@email.com"
                   disabled={isSubmitting}

@@ -192,6 +192,7 @@ const Admin = () => {
               onEdit={handleEditPost}
               onDelete={handleDeletePost}
               onCreatePost={handleCreatePost}
+              onSave={handleSavePost}
             />
           ) : (
             <BlogEditor

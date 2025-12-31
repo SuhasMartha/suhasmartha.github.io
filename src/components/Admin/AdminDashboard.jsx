@@ -1,12 +1,30 @@
+// Recharts imports for Support Activity Graph
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  Legend
+} from 'recharts';
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import BlogEditor from './BlogEditor';
 import CommentModeration from './CommentModeration';
 import PostAnalytics from './PostAnalytics';
 import AuthorProfile from './AuthorProfile';
+import ContentCalendar from './ContentCalendar';
 import { analytics } from '../../utils/analytics';
+import supalogos from '../../assets/supabase-logo.png';
+import searchConsoleLogo from '../../assets/search-console.png';
+import analyticsLogo from '../../assets/google-analytics.png';
 
-const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreatePost }) => {
+const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreatePost, onSave }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [comments, setComments] = useState([]);
   const [loadingComments, setLoadingComments] = useState(false);
@@ -19,11 +37,45 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
   const [lastActivity, setLastActivity] = useState(Date.now());
   const [systemStatus, setSystemStatus] = useState({ status: 'checking', message: 'Connecting to database...' });
 
+  // Support Data State
+  const [supportData, setSupportData] = useState({ contacts: [], newsletter: [], games: [] });
+  const [loadingSupport, setLoadingSupport] = useState(false);
+
+  // Helper to get last 14 days activity
+  const getSupportActivityData = () => {
+    const days = 14;
+    const data = [];
+    const now = new Date();
+
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      const shortDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+      // Count items for this date
+      const messagesCount = supportData.contacts.filter(c => c.created_at.startsWith(dateStr)).length;
+      const feedbackCount = supportData.games.filter(g => g.created_at.startsWith(dateStr)).length;
+      const newsletterCount = supportData.newsletter.filter(n => n.created_at.startsWith(dateStr)).length;
+
+      data.push({
+        date: shortDate,
+        Messages: messagesCount,
+        Feedback: feedbackCount,
+        Newsletter: newsletterCount,
+      });
+    }
+    return data;
+  };
+
+  const supportActivityData = getSupportActivityData();
+
   useEffect(() => {
     fetchComments();
     fetchAnalytics();
     checkSystemStatus();
-  }, []);
+    fetchSupportData();
+  }, [posts]); // Refresh data when posts change
 
   const checkSystemStatus = async () => {
     try {
@@ -94,6 +146,94 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
       setComments([]);
     } finally {
       setLoadingComments(false);
+    }
+  };
+
+  const fetchSupportData = async () => {
+    setLoadingSupport(true);
+    try {
+      const [contacts, newsletter, games] = await Promise.all([
+        supabase.from('contact_messages').select('*').order('created_at', { ascending: false }),
+        supabase.from('newsletter_subscribers').select('*').order('created_at', { ascending: false }),
+        supabase.from('game_feedback').select('*').order('created_at', { ascending: false })
+      ]);
+
+      setSupportData({
+        contacts: contacts.data || [],
+        newsletter: newsletter.data || [],
+        games: games.data || []
+      });
+    } catch (error) {
+      console.error('Error fetching support data:', error);
+    } finally {
+      setLoadingSupport(false);
+    }
+  };
+
+  const handleMarkSupportRead = async () => {
+    try {
+      const unreadContacts = supportData.contacts.filter(c => c.status === 'unread');
+      const unreadGames = supportData.games.filter(g => g.status === 'new');
+
+      if (unreadContacts.length > 0) {
+        await supabase
+          .from('contact_messages')
+          .update({ status: 'read' })
+          .in('id', unreadContacts.map(c => c.id));
+      }
+
+      if (unreadGames.length > 0) {
+        await supabase
+          .from('game_feedback')
+          .update({ status: 'read' })
+          .in('id', unreadGames.map(g => g.id));
+      }
+
+      await fetchSupportData();
+    } catch (error) {
+      console.error('Error marking support as read:', error);
+    }
+  };
+
+  const handleDeleteSupport = async (table, id, e) => {
+    if (e) e.stopPropagation();
+    if (!confirm('Are you sure you want to delete this item?')) return;
+    try {
+      const { error } = await supabase.from(table).delete().eq('id', id);
+      if (error) throw error;
+      await fetchSupportData();
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      alert('Failed to delete item: ' + error.message);
+    }
+  };
+
+  const handleReply = (email, subject = '', originalMessage = '', e) => {
+    if (e) e.stopPropagation();
+    if (!email) return;
+    const subjectLine = subject ? `Re: ${subject}` : 'Re: Your message';
+    const body = originalMessage ? `\n\n> ${originalMessage.substring(0, 100)}...` : '';
+    // Use Gmail web interface to avoid blank tabs/unconfigured clients
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${email}&su=${encodeURIComponent(subjectLine)}&body=${encodeURIComponent(body)}`;
+    window.open(gmailUrl, '_blank');
+  };
+
+  const handleCopyAllEmails = async () => {
+    const emails = supportData.newsletter.map(sub => sub.email).join(', ');
+    if (!emails) {
+      alert('No subscribers to copy.');
+      return;
+    }
+    await handleCopy(emails);
+  };
+
+  const handleCopy = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      // Optional: You could add a toast state here
+      alert('Copied to clipboard!');
+    } catch (err) {
+      console.error('Failed to copy:', err);
     }
   };
 
@@ -207,11 +347,25 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
     setActiveTab('posts');
   };
 
-  const handleNewPost = () => {
-    setSelectedPost(null);
+  const handleNewPost = (dateOrEvent = null) => {
+    // If a date is provided (and it's not an event), pre-fill it
+    const date = (dateOrEvent && !dateOrEvent.target) ? dateOrEvent : null;
+
+    if (date) {
+      setSelectedPost({
+        title: '',
+        slug: '',
+        content: '',
+        publish_date: date.toISOString().split('T')[0],
+        published: false // Default to draft for scheduled posts
+      });
+    } else {
+      setSelectedPost(null);
+    }
     setIsEditing(true);
     setActiveTab('editor');
   };
+
 
   const handleViewAuthor = (authorName) => {
     setSelectedAuthor(authorName);
@@ -232,7 +386,9 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
       draftPosts,
       featuredPosts,
       pendingComments,
-      totalComments
+      pendingComments,
+      totalComments,
+      unreadSupport: supportData.contacts.filter(c => c.status === 'unread').length + supportData.games.filter(g => g.status === 'new').length
     };
   };
 
@@ -313,6 +469,8 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
+
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'dashboard':
@@ -359,7 +517,7 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
             </div>
 
             {/* Statistics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div
                 onClick={() => setActiveTab('posts')}
                 className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-md hover:translate-y-[-2px] transition-all duration-200"
@@ -384,11 +542,6 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
                   </div>
                   <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-blue-600">💬</div>
                 </div>
-                {stats.pendingComments > 0 && (
-                  <p className="text-xs text-red-600 dark:text-red-400 mt-2 font-medium">
-                    {stats.pendingComments} pending approval
-                  </p>
-                )}
               </div>
 
               {/* Analytics Snippets */}
@@ -406,15 +559,41 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
               </div>
 
               <div
-                onClick={() => setActiveTab('analytics')}
+                onClick={() => setActiveTab('support')}
                 className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-md hover:translate-y-[-2px] transition-all duration-200"
               >
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Engagement</h3>
-                    <p className="text-2xl font-bold text-green-600 mt-2">{analyticsData.engagementRate || 0}%</p>
+                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Newsletter</h3>
+                    <p className="text-2xl font-bold text-green-600 mt-2">{supportData.newsletter.length}</p>
                   </div>
-                  <div className="p-2 bg-green-50 dark:bg-green-900/30 rounded-lg text-green-600">📈</div>
+                  <div className="p-2 bg-green-50 dark:bg-green-900/30 rounded-lg text-green-600">📧</div>
+                </div>
+              </div>
+
+              <div
+                onClick={() => setActiveTab('support')}
+                className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-md hover:translate-y-[-2px] transition-all duration-200"
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Messages</h3>
+                    <p className="text-2xl font-bold text-blue-600 mt-2">{supportData.contacts.length}</p>
+                  </div>
+                  <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-blue-600">📫</div>
+                </div>
+              </div>
+
+              <div
+                onClick={() => setActiveTab('support')}
+                className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-md hover:translate-y-[-2px] transition-all duration-200"
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Game Feedback</h3>
+                    <p className="text-2xl font-bold text-purple-600 mt-2">{supportData.games.length}</p>
+                  </div>
+                  <div className="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-lg text-purple-600">🎮</div>
                 </div>
               </div>
             </div>
@@ -445,7 +624,7 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
                 </div>
               </div>
             </div>
-          </div>
+          </div >
         );
 
       case 'posts':
@@ -635,35 +814,273 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
           </div>
         );
 
+      case 'planning':
+        return (
+          <ContentCalendar
+            posts={posts}
+            onEditPost={handleEditPost}
+            onNewPost={handleNewPost}
+          />
+        );
+
       case 'supabase':
         return (
-          <div className="flex flex-col h-[calc(100vh-200px)] -m-8 relative group">
-            <div className="bg-blue-50 dark:bg-blue-900/20 p-2 text-center text-xs text-blue-600 dark:text-blue-300 border-b border-blue-100 dark:border-blue-800 flex justify-between items-center px-4">
-              <span>
-                Note: You must be logged into Supabase in this browser. If it's blank or refused, it's a security block.
-              </span>
+          <div className="space-y-6">
+            <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 text-center">
+              <div className="mb-6 flex justify-center">
+                <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                  <img src={supalogos} alt="Supabase Logo" className="w-12 h-12 object-contain" />
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Supabase Management</h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-lg mx-auto">
+                <span className="block mb-2 font-semibold text-amber-600 dark:text-amber-400">Developer Access Required</span>
+              </p>
               <a
                 href="https://supabase.com/dashboard/project/maagvnyxarmbzozufqcd"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 font-bold hover:text-blue-800"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors duration-200"
               >
-                Open External <span className="text-lg">↗</span>
+                <span>Launch Supabase Studio</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
               </a>
             </div>
-            {/* 
-              Supabase sends 'X-Frame-Options: SAMEORIGIN' which blocks standard embedding.
-              This iframe will likely fail in standard browsers without extensions to strip headers.
-              Restoring as per user request. 
-            */}
-            <iframe
-              src="https://supabase.com/dashboard/project/maagvnyxarmbzozufqcd"
-              className="w-full flex-1 border-0 bg-white"
-              title="Supabase Dashboard"
-              allow="clipboard-read; clipboard-write"
-            />
           </div>
         );
+
+      case 'support':
+        return (
+          <div className="space-y-8">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Support Center & Analytics</h2>
+              {(stats.unreadSupport > 0) && (
+                <button
+                  onClick={handleMarkSupportRead}
+                  className="px-4 py-2 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 rounded-lg text-sm font-medium hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                >
+                  Mark All Read
+                </button>
+              )}
+            </div>
+
+            {/* Analytics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Contacts</h3>
+                <p className="text-2xl font-bold text-blue-600 mt-2">{supportData.contacts.length}</p>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Newsletter Subscribers</h3>
+                <p className="text-2xl font-bold text-green-600 mt-2">{supportData.newsletter.length}</p>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Game Feedback</h3>
+                <p className="text-2xl font-bold text-purple-600 mt-2">{supportData.games.length}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Contact Messages */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+                  <h3 className="font-bold text-gray-900 dark:text-gray-100">Recent Messages</h3>
+                </div>
+                <div className="max-h-[400px] overflow-y-auto">
+                  {supportData.contacts.length === 0 ? (
+                    <p className="p-4 text-center text-gray-500">No messages yet.</p>
+                  ) : (
+                    <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {supportData.contacts.map(contact => (
+                        <li key={contact.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 group">
+                          <div className="flex justify-between items-start mb-1">
+                            <div>
+                              <span className="font-semibold text-sm">{contact.first_name} {contact.last_name}</span>
+                              <span className="text-xs text-gray-500 ml-2">{new Date(contact.created_at).toLocaleDateString()}</span>
+                            </div>
+                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={(e) => handleReply(contact.email, contact.subject, contact.message, e)}
+                                className="p-1 hover:bg-blue-100 text-blue-600 rounded"
+                                title="Reply via Email"
+                              >
+                                ↩️
+                              </button>
+                              <button
+                                onClick={(e) => handleDeleteSupport('contact_messages', contact.id, e)}
+                                className="p-1 hover:bg-red-100 text-red-600 rounded"
+                                title="Delete"
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </div>
+                          <p className="text-xs text-gray-400 mb-2 cursor-pointer hover:text-blue-500" onClick={() => handleCopy(contact.email)} title="Click to copy email">
+                            {contact.email}
+                          </p>
+                          <p className="text-sm text-gray-800 dark:text-gray-200 font-medium mb-1">{contact.subject}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{contact.message}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+
+              {/* Game Feedback */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+                  <h3 className="font-bold text-gray-900 dark:text-gray-100">Game Feedback</h3>
+                </div>
+                <div className="max-h-[400px] overflow-y-auto">
+                  {supportData.games.length === 0 ? (
+                    <p className="p-4 text-center text-gray-500">No feedback yet.</p>
+                  ) : (
+                    <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {supportData.games.map(game => (
+                        <li key={game.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 group">
+                          <div className="flex justify-between items-start mb-1">
+                            <div>
+                              <span className="font-semibold text-sm">{game.name || 'Anonymous'}</span>
+                              <span className="text-xs text-gray-500 ml-2">{new Date(game.created_at).toLocaleDateString()}</span>
+                            </div>
+                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {game.email && (
+                                <button
+                                  onClick={(e) => handleReply(game.email, 'Game Feedback', game.message, e)}
+                                  className="p-1 hover:bg-blue-100 text-blue-600 rounded"
+                                  title="Reply via Email"
+                                >
+                                  ↩️
+                                </button>
+                              )}
+                              <button
+                                onClick={(e) => handleDeleteSupport('game_feedback', game.id, e)}
+                                className="p-1 hover:bg-red-100 text-red-600 rounded"
+                                title="Delete"
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </div>
+                          {game.email && (
+                            <p className="text-xs text-gray-400 mb-2 cursor-pointer hover:text-blue-500" onClick={() => handleCopy(game.email)} title="Click to copy email">
+                              {game.email}
+                            </p>
+                          )}
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{game.message}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Newsletter List */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <h3 className="font-bold text-gray-900 dark:text-gray-100">Newsletter Subscribers</h3>
+                  <button
+                    onClick={handleCopyAllEmails}
+                    className="flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    title="Copy all emails to clipboard"
+                  >
+                    📋 Copy All
+                  </button>
+                </div>
+                <span className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">{supportData.newsletter.length} Active</span>
+              </div>
+              <div className="max-h-[300px] overflow-y-auto p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {supportData.newsletter.map(sub => (
+                    <div key={sub.id} className="p-3 bg-gray-50 dark:bg-gray-700/30 rounded border border-gray-100 dark:border-gray-700 flex items-center gap-3 group relative">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs">✉️</div>
+                      <div className="overflow-hidden flex-1">
+                        <p
+                          className="text-sm font-medium truncate cursor-pointer hover:text-blue-500"
+                          onClick={(e) => { e.stopPropagation(); handleCopy(sub.email); }}
+                          title="Click to copy email"
+                        >
+                          {sub.email}
+                        </p>
+                        <p className="text-xs text-gray-500">{new Date(sub.created_at).toLocaleDateString()}</p>
+                      </div>
+                      <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-white dark:bg-gray-800 rounded shadow-sm border p-1">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleCopy(sub.email); }}
+                          className="p-1 hover:bg-blue-100 text-blue-600 rounded"
+                          title="Copy Email"
+                        >
+                          📋
+                        </button>
+                        <button
+                          onClick={(e) => handleDeleteSupport('newsletter_subscribers', sub.id, e)}
+                          className="p-1 hover:bg-red-100 text-red-600 rounded"
+                          title="Unsubscribe/Delete"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'google-tools':
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">Google Tools</h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Google Search Console */}
+              <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col items-center text-center hover:shadow-md transition-shadow">
+                <div className="w-20 h-20 bg-gray-50 dark:bg-gray-700/50 rounded-full flex items-center justify-center mb-4 p-4">
+                  <img src={searchConsoleLogo} alt="Google Search Console" className="w-full h-full object-contain" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Search Console</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 flex-1">
+                  Monitor search performance, indexing status, and optimize visibility.
+                </p>
+                <a
+                  href="https://search.google.com/search-console?resource_id=https%3A%2F%2Fsuhasmartha.github.io%2F"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 px-4 bg-[#4584da] dark:bg-[#4584da] text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
+                >
+                  Open Console
+                </a>
+              </div>
+
+              {/* Google Analytics */}
+              <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col items-center text-center hover:shadow-md transition-shadow">
+                <div className="w-20 h-20 bg-orange-50 dark:bg-orange-900/10 rounded-full flex items-center justify-center mb-4 p-4">
+                  <img src={analyticsLogo} alt="Google Analytics" className="w-full h-full object-contain" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Google Analytics</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 flex-1">
+                  Track website traffic, user behavior, and real-time data.
+                </p>
+                <a
+                  href="https://analytics.google.com/analytics/web/?utm_source=marketingplatform.google.com&utm_medium=et&utm_campaign=marketingplatform.google.com%2Fabout%2Fanalytics%2F#/a366804545p503112379/reports/intelligenthome?params=_u..nav%3Dmaui&collectionId=business-objectives"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 px-4 bg-orange-500 text-white font-medium rounded-lg hover:bg-orange-600 transition-colors"
+                >
+                  Open Analytics
+                </a>
+              </div>
+            </div>
+          </div>
+        );
+
+
 
       case 'authors':
         return (
@@ -739,26 +1156,40 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
     }
   };
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+      <aside
+        className={`${isSidebarOpen ? 'w-64' : 'w-20'
+          } bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300 ease-in-out z-20`}
+      >
         {/* Sidebar Header */}
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <span className="text-lhilit-1 dark:text-dhilit-1">⚡</span> Admin
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center whitespace-nowrap overflow-hidden">
+          <h2 className={`text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2 ${!isSidebarOpen && 'hidden'}`}>
+            <span className="text-lhilit-1 dark:text-dhilit-1">🛠️</span> Admin
           </h2>
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className={`p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 ${!isSidebarOpen && 'mx-auto'}`}
+          >
+            {isSidebarOpen ? '◀' : '▶'}
+          </button>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+        <nav className="flex-1 px-3 space-y-1 overflow-y-auto no-scrollbar">
           {[
             { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-            { id: 'posts', label: 'Posts', icon: '📝', badge: stats.totalPosts },
+            { id: 'posts', label: 'Posts', icon: '📝' },
+            { id: 'planning', label: 'Schedule', icon: '📅' },
             { id: 'comments', label: 'Comments', icon: '💬', badge: stats.pendingComments > 0 ? stats.pendingComments : null, badgeColor: 'bg-red-500 text-white' },
+            { id: 'support', label: 'Support', icon: '📫', badge: stats.unreadSupport > 0 ? stats.unreadSupport : null, badgeColor: 'bg-blue-500 text-white' }, // New Support Tab
             { id: 'analytics', label: 'SEO & Analytics', icon: '📈' },
             { id: 'authors', label: 'Authors', icon: '👥' },
-            { id: 'supabase', label: 'Supabase', icon: '⚡' }
+            { id: 'supabase', label: 'Supabase', icon: '⚡' },
+            { id: 'google-tools', label: 'Google', icon: '🌐' }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -766,45 +1197,58 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
               className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${activeTab === tab.id
                 ? 'bg-lhilit-1/10 text-lhilit-1 dark:text-dhilit-1'
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-200'
-                }`}
+                } ${!isSidebarOpen && 'justify-center px-2'}`}
+              title={!isSidebarOpen ? tab.label : ''}
             >
-              <span className="mr-3 text-lg">{tab.icon}</span>
-              <span className="flex-1 text-left">{tab.label}</span>
-              {tab.badge && (
+              <span className={`text-lg transition-all ${isSidebarOpen ? 'mr-3' : 'mr-0'}`}>{tab.icon}</span>
+              {isSidebarOpen && <span className="flex-1 text-left whitespace-nowrap overflow-hidden">{tab.label}</span>}
+              {tab.badge && isSidebarOpen && (
                 <span className={`ml-auto px-2 py-0.5 text-xs font-semibold rounded-full ${tab.badgeColor || 'bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-200'}`}>
                   {tab.badge}
                 </span>
+              )}
+              {tab.badge && !isSidebarOpen && (
+                <span className={`absolute top-0 right-0 h-2 w-2 rounded-full ${tab.badgeColor ? 'bg-red-500' : 'bg-blue-500'}`} />
               )}
             </button>
           ))}
         </nav>
 
         {/* User Profile / Footer */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3 mb-4 px-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-lhilit-1 to-lhilit-2 dark:from-dhilit-1 dark:to-dhilit-2 flex items-center justify-center text-white font-bold text-xs">
-              {user?.email?.[0].toUpperCase() || 'A'}
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700 whitespace-nowrap overflow-hidden">
+          {isSidebarOpen ? (
+            <div className="flex items-center gap-3 mb-4 px-2">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-lhilit-1 to-lhilit-2 dark:from-dhilit-1 dark:to-dhilit-2 flex items-center justify-center text-white font-bold text-xs">
+                {user?.email?.[0].toUpperCase() || 'A'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                  Admin User
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  {user?.email}
+                </p>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                Admin User
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                {user?.email}
-              </p>
+          ) : (
+            <div className="flex justify-center mb-4">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-lhilit-1 to-lhilit-2 dark:from-dhilit-1 dark:to-dhilit-2 flex items-center justify-center text-white font-bold text-xs">
+                {user?.email?.[0].toUpperCase() || 'A'}
+              </div>
             </div>
-          </div>
+          )}
           <button
             onClick={handleSignOut}
-            className="w-full flex items-center justify-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors"
+            className={`w-full flex items-center justify-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors ${!isSidebarOpen && 'px-2'}`}
+            title="Sign Out"
           >
-            Sign Out
+            {isSidebarOpen ? 'Sign Out' : '🚪'}
           </button>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto relative">
+      <main className="flex-1 overflow-y-auto relative w-full">
         <div className="max-w-7xl mx-auto px-8 py-8">
           {/* Top Header Section */}
           <header className="flex items-center justify-between mb-8">
@@ -817,6 +1261,9 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
                 {activeTab === 'authors' && 'Author Management'}
                 {activeTab === 'author-profile' && 'Author Profile'}
                 {activeTab === 'supabase' && 'Database Resources'}
+                {activeTab === 'google-tools' && 'Google Integrations'}
+                {activeTab === 'planning' && 'Content Calendar'}
+                {activeTab === 'support' && 'Support & Feedback'}
                 {activeTab === 'editor' && 'Post Editor'}
               </h1>
               <p className="text-sm text-gray-500 mt-1">
@@ -825,12 +1272,34 @@ const AdminDashboard = ({ user, posts, postsLoading, onEdit, onDelete, onCreateP
             </div>
 
             {activeTab !== 'editor' && (
-              <button
-                onClick={handleNewPost}
-                className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-lg text-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
-              >
-                <span>+</span> New Post
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    const root = document.documentElement;
+                    const isDark = root.classList.contains('dark');
+                    if (isDark) {
+                      root.classList.remove('dark');
+                      localStorage.setItem('theme', 'light');
+                      root.style.setProperty('--on', '1');
+                    } else {
+                      root.classList.add('dark');
+                      localStorage.setItem('theme', 'dark');
+                      root.style.setProperty('--on', '0');
+                    }
+                  }}
+                  className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  title="Toggle Theme"
+                >
+                  <span className="dark:hidden">☀️</span>
+                  <span className="hidden dark:inline">🌙</span>
+                </button>
+                <button
+                  onClick={handleNewPost}
+                  className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-lg text-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
+                >
+                  <span>+</span> New Post
+                </button>
+              </div>
             )}
           </header>
 

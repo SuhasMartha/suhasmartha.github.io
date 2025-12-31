@@ -1,5 +1,4 @@
 import React from "react";
-import soon from "../assets/soon.webp";
 import ContactMini from "../components/ContactMini";
 import Navbar from "../Navbar";
 import Footer from "../components/Footer";
